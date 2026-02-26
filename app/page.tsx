@@ -53,7 +53,7 @@ export default function Home() {
   const [isSavingItem, setIsSavingItem] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const ownerWhatsAppNumber = '917568045830'; 
+  const ownerWhatsAppNumber = '917878337311'; 
 
   useEffect(() => {
     fetchMenuItems();
