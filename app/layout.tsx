@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 // Website ka SEO Title aur Description update kar diya hai
 export const metadata: Metadata = {
-  title: "Fund & Foods | Premium Cloud Kitchen",
+  title: "Fun & Foods | Premium Cloud Kitchen",
   description: "Authentic Chinese, Fast Food & Party Catering in Rani.",
 };
 
