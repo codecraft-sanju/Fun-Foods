@@ -1,5 +1,6 @@
 'use client';
 
+import Testimonial from '@/app/api/components/Testimonials';
 import { useState, useEffect, useRef } from 'react';
 
 // TypeScript interface for our MongoDB Item
@@ -17,16 +18,6 @@ interface MenuItemType {
 interface CartItemType extends MenuItemType {
   cartQuantity: number;
 }
-
-// --- DUMMY TESTIMONIALS DATA (Food Category Specific) ---
-const testimonialsData = [
-  { id: 1, name: 'Priyanshu', handle: '@priyanshu00', text: 'Fun & Foods has the best Fast Food in Rani! The burgers are super juicy and delivery is always on time.', date: '12 Jan 2026', img: 'https://i.pravatar.cc/150?img=11' },
-  { id: 2, name: 'Nikhil Kumar', handle: '@thala07', text: 'Absolutely love their pizzas! The crust is so soft and toppings are fresh. Highly recommend ordering from here.', date: '03 Feb 2026', img: 'https://i.pravatar.cc/150?img=12' },
-  { id: 3, name: 'Kunal', handle: '@kunal18', text: 'Bhai maza aa gaya! The Thali was completely authentic and felt like home-cooked food. Best cloud kitchen!', date: '19 Aug 2025', img: 'https://i.pravatar.cc/150?img=13' },
-  { id: 4, name: 'Umar Faruk', handle: '@umarfaruk', text: 'Super fast delivery even in Rani Gaov. Food was piping hot when it arrived. Ordering process on WhatsApp is smooth.', date: '23 May 2025', img: 'https://i.pravatar.cc/150?img=14' },
-  { id: 5, name: 'Sneha Kapoor', handle: '@neha98', text: 'Great taste and premium packaging. The Chinese platters are just mind-blowing. Will definitely order again.', date: '08 Apr 2025', img: 'https://i.pravatar.cc/150?img=5' },
-  { id: 6, name: 'Bhagwan Jha', handle: '@bkjha', text: 'Best catering and daily food service in the area. Food quality never drops. 10/10 service every single time.', date: '07 Dec 2025', img: 'https://i.pravatar.cc/150?img=8' }
-];
 
 // NAYA: Scroll Animation ke liye custom component jisse scroll karne par item aaye
 function ScrollReveal({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) {
@@ -70,6 +61,10 @@ export default function Home() {
   const [view, setView] = useState<'store' | 'admin'>('store');
   const [isLoading, setIsLoading] = useState(true);
   
+  // --- Dynamic Delivery Settings State ---
+  const [deliverySettings, setDeliverySettings] = useState({ local: 50, gaov: 80 });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  
   // --- Store States ---
   const [searchTerm, setSearchTerm] = useState('');
   const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
@@ -106,6 +101,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchMenuItems();
+    fetchDeliverySettings(); // Page load hote hi settings fetch karo
   }, []);
 
   const fetchMenuItems = async () => {
@@ -120,6 +116,20 @@ export default function Home() {
       console.error('Failed to fetch menu:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchDeliverySettings = async () => {
+    try {
+      const res = await fetch('/api/settings');
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.localCharge !== undefined) {
+          setDeliverySettings({ local: data.localCharge, gaov: data.gaovCharge });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch delivery settings:', error);
     }
   };
 
@@ -195,7 +205,8 @@ export default function Home() {
     setIsSubmittingOrder(true);
 
     setTimeout(() => {
-      const deliveryCharge = deliveryArea === 'local' ? 50 : 80;
+      // NAYA: Delivery charge ab dynamic DB wali settings se aayega
+      const deliveryCharge = deliveryArea === 'local' ? deliverySettings.local : deliverySettings.gaov;
       const areaName = deliveryArea === 'local' ? 'Rani Local' : 'Rani Gaov';
       const itemsTotal = getCartTotal();
       const finalTotal = itemsTotal + deliveryCharge;
@@ -393,6 +404,33 @@ export default function Home() {
     }
   };
 
+  // NAYA: Delivery Settings Save Karne ka Function
+  const handleUpdateDeliverySettings = async () => {
+    setIsSavingSettings(true);
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          localCharge: deliverySettings.local,
+          gaovCharge: deliverySettings.gaov
+        }),
+      });
+      
+      if (res.ok) {
+        alert('Delivery charges successfully update ho gaye!');
+      } else {
+        alert('Charges update karne me error aayi.');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Network error.');
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+
   // --- ADMIN VIEW RENDER ---
   if (view === 'admin') {
     return (
@@ -405,6 +443,8 @@ export default function Home() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 relative">
             <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm lg:col-span-1 h-fit lg:sticky lg:top-6 relative z-20 border border-gray-100">
+              
+              {/* Product Form Section */}
               <h2 className="text-xl font-bold mb-6 text-gray-800">
                 {editItemId ? 'Edit Item' : 'Add New Item'}
               </h2>
@@ -524,6 +564,46 @@ export default function Home() {
                   )}
                 </div>
               </form>
+
+              {/* NAYA: Admin Panel Settings Box */}
+              <div className="mt-8 pt-8 border-t border-gray-100">
+                <h2 className="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+                   <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                   Delivery Charges
+                </h2>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Local (₹)</label>
+                      <input 
+                        type="number" 
+                        value={deliverySettings.local} 
+                        onChange={e => setDeliverySettings({...deliverySettings, local: Number(e.target.value)})} 
+                        className="w-full p-3 rounded-xl border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-orange-500 font-bold outline-none" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Gaov (₹)</label>
+                      <input 
+                        type="number" 
+                        value={deliverySettings.gaov} 
+                        onChange={e => setDeliverySettings({...deliverySettings, gaov: Number(e.target.value)})} 
+                        className="w-full p-3 rounded-xl border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-orange-500 font-bold outline-none" 
+                      />
+                    </div>
+                  </div>
+                  <button 
+                    onClick={handleUpdateDeliverySettings} 
+                    disabled={isSavingSettings} 
+                    className={`w-full text-white font-bold py-3.5 rounded-xl transition-colors flex justify-center items-center gap-2 ${isSavingSettings ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-gray-800 shadow-md'}`}
+                  >
+                    {isSavingSettings ? (
+                      <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> Saving...</>
+                    ) : 'Save Changes'}
+                  </button>
+                </div>
+              </div>
+              
             </div>
 
             <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm lg:col-span-2 relative z-10 border border-gray-100">
@@ -597,29 +677,6 @@ export default function Home() {
           100% { opacity: 1; transform: translateY(0) scale(1); }
         }
         
-        /* Auto-Scrolling Marquee Animations (Double Direction) */
-        @keyframes scrollXLeft {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(calc(-50% - 0.5rem)); }
-        }
-        @keyframes scrollXRight {
-          0% { transform: translateX(calc(-50% - 0.5rem)); }
-          100% { transform: translateX(0); }
-        }
-        
-        .animate-scroll-left {
-          animation: scrollXLeft 30s linear infinite;
-          width: max-content;
-        }
-        .animate-scroll-right {
-          animation: scrollXRight 30s linear infinite;
-          width: max-content;
-        }
-        
-        .animate-scroll-left:hover, .animate-scroll-right:hover {
-          animation-play-state: paused;
-        }
-
         /* Hide scrollbar */
         .hide-scrollbar::-webkit-scrollbar {
           display: none;
@@ -666,7 +723,6 @@ export default function Home() {
         <section className="relative w-full h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden mt-[72px]">
           <div className="absolute inset-0 bg-cover bg-center z-0 scale-105 animate-[pulse_10s_ease-in-out_infinite]" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=2000')" }} />
           
-          {/* NAYA: White dhundhlapan hatakar clear image ke liye halka sa black shade lagaya taaki text bacha rahe */}
           <div className="absolute inset-0 bg-black/20 z-10" /> 
           
           <div className="relative z-20 text-center px-6 max-w-3xl mx-auto mt-8" style={{ animation: 'fadeUpSmooth 1s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}>
@@ -722,7 +778,6 @@ export default function Home() {
                   <div className="flex overflow-x-auto gap-6 pb-8 pt-2 snap-x snap-mandatory px-1 hide-scrollbar">
                     {items.map((item, itemIndex) => (
                       <div key={item._id} className="snap-start shrink-0 w-[280px] md:w-[320px] h-full">
-                        {/* NAYA: ScrollReveal lagaya gaya h taki card samne aane par animate ho */}
                         <ScrollReveal delay={(itemIndex % 4) * 0.1} className="h-full">
                           <div className="group h-full bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl border border-gray-100 transition-all duration-300 flex flex-col relative hover:-translate-y-1">
                             
@@ -734,7 +789,6 @@ export default function Home() {
                               </div>
                             )}
 
-                            {/* UPDATED HEIGHT: h-56 to h-48 */}
                             <div className="relative h-48 bg-gray-100 overflow-hidden shrink-0">
                               {!loadedImages[item._id] && (
                                 <div className="absolute inset-0 flex items-center justify-center">
@@ -750,7 +804,6 @@ export default function Home() {
                               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                             </div>
 
-                            {/* UPDATED PADDING: p-5 to p-4 */}
                             <div className="p-4 flex flex-col flex-grow bg-white relative z-10">
                               <div className="flex justify-between items-start mb-2">
                                 <h2 className="text-xl font-bold text-gray-900 leading-tight pr-2 group-hover:text-orange-600 transition-colors">{item.name}</h2>
@@ -762,11 +815,9 @@ export default function Home() {
                                 </div>
                               </div>
                               
-                              {/* UPDATED MARGIN: mb-6 to mb-3 */}
                               <p className="text-sm text-gray-500 mb-3 line-clamp-2 h-10 font-medium">{item.description}</p>
 
                               <div className="mt-auto">
-                                {/* UPDATED MARGIN: mb-4 to mb-3 */}
                                 <div className="flex items-center justify-between mb-3 bg-slate-50 p-2 rounded-2xl border border-slate-100">
                                   <span className="text-sm font-bold text-gray-700 ml-2">Qty</span>
                                   <div className="flex items-center space-x-3 bg-white rounded-xl p-1 shadow-sm border border-gray-100">
@@ -780,7 +831,6 @@ export default function Home() {
                                   </div>
                                 </div>
 
-                                {/* UPDATED BUTTON PADDING: py-3.5 to py-3 */}
                                 <button
                                   onClick={() => addToCart(item)}
                                   disabled={addingItemId === item._id}
@@ -815,76 +865,7 @@ export default function Home() {
           )}
         </section>
 
-        {/* --- NAYA: PREMIUM TESTIMONIALS SECTION --- */}
-        <section className="bg-[#0b1120] py-20 sm:py-24 relative overflow-hidden border-t-4 border-slate-800">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center z-0 opacity-[0.03] pointer-events-none select-none overflow-hidden flex justify-center">
-             <h2 className="text-[12vw] font-black text-white tracking-widest whitespace-nowrap">TESTIMONIAL</h2>
-          </div>
-
-          <div className="relative z-10">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center mb-10 sm:mb-14">
-              <ScrollReveal>
-                <h3 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">Loved By Our Foodies</h3>
-                <p className="text-slate-400 font-medium max-w-xl mx-auto text-sm sm:text-base">See what our customers have to say about our premium quality, authentic taste, and lightning-fast delivery.</p>
-              </ScrollReveal>
-            </div>
-            
-            {/* FULL WIDTH MARQUEE WRAPPERS */}
-            <div className="relative w-full overflow-hidden flex flex-col gap-4 sm:gap-6">
-               <div className="absolute top-0 bottom-0 left-0 w-12 sm:w-24 bg-gradient-to-r from-[#0b1120] to-transparent z-20 pointer-events-none"></div>
-               <div className="absolute top-0 bottom-0 right-0 w-12 sm:w-24 bg-gradient-to-l from-[#0b1120] to-transparent z-20 pointer-events-none"></div>
-               
-               {/* ROW 1: Right to Left */}
-               <div className="relative flex group w-full">
-                 <div className="animate-scroll-left flex gap-4 items-stretch px-4">
-                   {[...testimonialsData, ...testimonialsData].map((testimonial, idx) => (
-                      <div key={`row1-${idx}`} className="w-[260px] sm:w-[320px] shrink-0 bg-[#151c2f] rounded-2xl p-4 sm:p-5 border border-slate-800 flex flex-col shadow-xl hover:border-slate-600 transition-colors cursor-pointer">
-                        <div className="flex items-center gap-3 mb-3 sm:mb-4">
-                          <img src={testimonial.img} alt={testimonial.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-slate-700" />
-                          <div>
-                            <h4 className="text-white font-bold flex items-center gap-1.5 text-sm sm:text-base">
-                              {testimonial.name}
-                              <svg className="w-3.5 h-3.5 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.9 14.7L6 12.6l1.5-1.5 2.6 2.6 6.4-6.4 1.5 1.5-7.9 7.9z" />
-                              </svg>
-                            </h4>
-                            <p className="text-[11px] sm:text-xs text-slate-400">{testimonial.handle}</p>
-                          </div>
-                        </div>
-                        <p className="text-slate-300 text-xs sm:text-sm leading-relaxed mb-4 flex-grow">"{testimonial.text}"</p>
-                        <p className="text-[10px] sm:text-xs text-slate-500 font-medium">{testimonial.date}</p>
-                      </div>
-                   ))}
-                 </div>
-               </div>
-
-               {/* ROW 2: Left to Right */}
-               <div className="relative flex group w-full">
-                 <div className="animate-scroll-right flex gap-4 items-stretch px-4">
-                   {[...testimonialsData, ...testimonialsData].reverse().map((testimonial, idx) => (
-                      <div key={`row2-${idx}`} className="w-[260px] sm:w-[320px] shrink-0 bg-[#151c2f] rounded-2xl p-4 sm:p-5 border border-slate-800 flex flex-col shadow-xl hover:border-slate-600 transition-colors cursor-pointer">
-                        <div className="flex items-center gap-3 mb-3 sm:mb-4">
-                          <img src={testimonial.img} alt={testimonial.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-slate-700" />
-                          <div>
-                            <h4 className="text-white font-bold flex items-center gap-1.5 text-sm sm:text-base">
-                              {testimonial.name}
-                              <svg className="w-3.5 h-3.5 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.9 14.7L6 12.6l1.5-1.5 2.6 2.6 6.4-6.4 1.5 1.5-7.9 7.9z" />
-                              </svg>
-                            </h4>
-                            <p className="text-[11px] sm:text-xs text-slate-400">{testimonial.handle}</p>
-                          </div>
-                        </div>
-                        <p className="text-slate-300 text-xs sm:text-sm leading-relaxed mb-4 flex-grow">"{testimonial.text}"</p>
-                        <p className="text-[10px] sm:text-xs text-slate-500 font-medium">{testimonial.date}</p>
-                      </div>
-                   ))}
-                 </div>
-               </div>
-
-            </div>
-          </div>
-        </section>
+        <Testimonial/>
 
         <footer className="bg-slate-900 text-gray-300 py-16 mt-auto">
           <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
@@ -916,11 +897,12 @@ export default function Home() {
               <ul className="space-y-3 text-sm font-medium">
                 <li className="flex justify-between border-b border-gray-800 pb-2">
                   <span>Rani Local Area</span>
-                  <span className="text-orange-500 font-bold">₹50</span>
+                  {/* NAYA: Footer me bhi dynamic rate */}
+                  <span className="text-orange-500 font-bold">₹{deliverySettings.local}</span>
                 </li>
                 <li className="flex justify-between border-b border-gray-800 pb-2">
                   <span>Rani Gaov Area</span>
-                  <span className="text-orange-500 font-bold">₹80</span>
+                  <span className="text-orange-500 font-bold">₹{deliverySettings.gaov}</span>
                 </li>
                 <li className="pt-2 text-gray-400">
                   Fast & secure delivery via WhatsApp orders.
@@ -1017,7 +999,6 @@ export default function Home() {
             ${isCartOpen ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-y-0 md:translate-x-full'}
           `}
         >
-          {/* Top handle pill for mobile to show it's a draggable sheet (visual cue) */}
           <div className="w-full flex justify-center pt-3 pb-1 md:hidden">
             <div className="w-12 h-1.5 bg-gray-200 rounded-full"></div>
           </div>
@@ -1099,16 +1080,17 @@ export default function Home() {
                 <div className="space-y-3">
                   <label className="block text-sm font-extrabold text-gray-700">Select Delivery Area</label>
                   <div className="grid grid-cols-2 gap-4">
+                    {/* NAYA: Dynamic Delivery Options in Checkout */}
                     <label className={`cursor-pointer flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${deliveryArea === 'local' ? 'border-orange-500 bg-orange-50 shadow-md transform scale-[1.02]' : 'border-gray-200 hover:border-orange-200 bg-white'}`}>
                       <input type="radio" name="area" value="local" checked={deliveryArea === 'local'} onChange={() => setDeliveryArea('local')} className="sr-only" />
                       <span className="font-extrabold text-gray-900">Rani Local</span>
-                      <span className="text-sm font-bold text-gray-500 mt-1">₹50 Charge</span>
+                      <span className="text-sm font-bold text-gray-500 mt-1">₹{deliverySettings.local} Charge</span>
                     </label>
                     
                     <label className={`cursor-pointer flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${deliveryArea === 'gaov' ? 'border-orange-500 bg-orange-50 shadow-md transform scale-[1.02]' : 'border-gray-200 hover:border-orange-200 bg-white'}`}>
                       <input type="radio" name="area" value="gaov" checked={deliveryArea === 'gaov'} onChange={() => setDeliveryArea('gaov')} className="sr-only" />
                       <span className="font-extrabold text-gray-900">Rani Gaov</span>
-                      <span className="text-sm font-bold text-gray-500 mt-1">₹80 Charge</span>
+                      <span className="text-sm font-bold text-gray-500 mt-1">₹{deliverySettings.gaov} Charge</span>
                     </label>
                   </div>
                 </div>
@@ -1127,7 +1109,8 @@ export default function Home() {
                 <div className="pt-4 border-t border-gray-100">
                   <div className="flex justify-between items-center mb-5 bg-slate-50 p-4 rounded-xl border border-slate-100">
                     <span className="text-gray-500 font-extrabold">Grand Total</span>
-                    <span className="text-3xl font-black text-gray-900">₹{getCartTotal() + (deliveryArea === 'local' ? 50 : 80)}</span>
+                    {/* NAYA: Dynamic Grand Total */}
+                    <span className="text-3xl font-black text-gray-900">₹{getCartTotal() + (deliveryArea === 'local' ? deliverySettings.local : deliverySettings.gaov)}</span>
                   </div>
                   <button
                     onClick={submitOrder}
