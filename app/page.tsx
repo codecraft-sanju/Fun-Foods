@@ -18,6 +18,16 @@ interface CartItemType extends MenuItemType {
   cartQuantity: number;
 }
 
+// --- DUMMY TESTIMONIALS DATA (Food Category Specific) ---
+const testimonialsData = [
+  { id: 1, name: 'Priyanshu', handle: '@priyanshu00', text: 'Fun & Foods has the best Fast Food in Rani! The burgers are super juicy and delivery is always on time.', date: '12 Jan 2026', img: 'https://i.pravatar.cc/150?img=11' },
+  { id: 2, name: 'Nikhil Kumar', handle: '@thala07', text: 'Absolutely love their pizzas! The crust is so soft and toppings are fresh. Highly recommend ordering from here.', date: '03 Feb 2026', img: 'https://i.pravatar.cc/150?img=12' },
+  { id: 3, name: 'Kunal', handle: '@kunal18', text: 'Bhai maza aa gaya! The Thali was completely authentic and felt like home-cooked food. Best cloud kitchen!', date: '19 Aug 2025', img: 'https://i.pravatar.cc/150?img=13' },
+  { id: 4, name: 'Umar Faruk', handle: '@umarfaruk', text: 'Super fast delivery even in Rani Gaov. Food was piping hot when it arrived. Ordering process on WhatsApp is smooth.', date: '23 May 2025', img: 'https://i.pravatar.cc/150?img=14' },
+  { id: 5, name: 'Sneha Kapoor', handle: '@neha98', text: 'Great taste and premium packaging. The Chinese platters are just mind-blowing. Will definitely order again.', date: '08 Apr 2025', img: 'https://i.pravatar.cc/150?img=5' },
+  { id: 6, name: 'Bhagwan Jha', handle: '@bkjha', text: 'Best catering and daily food service in the area. Food quality never drops. 10/10 service every single time.', date: '07 Dec 2025', img: 'https://i.pravatar.cc/150?img=8' }
+];
+
 export default function Home() {
   // --- Global States ---
   const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
@@ -80,7 +90,6 @@ export default function Home() {
   // NAYA: Dynamic categories list banana (Default + Database existing categories)
   const defaultCategories = ['Fast Food', 'Pizza', 'Burger', 'Chinese', 'Beverages', 'Thali'];
   const existingCategories = menuItems.map(item => item.type);
-  // Set ka use karke duplicate hata diye
   const allCategories = Array.from(new Set([...defaultCategories, ...existingCategories]));
 
   // --- Store Functions ---
@@ -122,7 +131,7 @@ export default function Home() {
       setQuantities(prev => ({...prev, [item._id]: 1}));
       setAddingItemId(null);
       setIsCartOpen(true); 
-    }, 400); // Smoother wait
+    }, 400); 
   };
 
   const removeFromCart = (id: string) => {
@@ -359,7 +368,6 @@ export default function Home() {
           </header>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 relative">
-            {/* CHANGED: Fixed responsive sticky issue. Only sticky on large screens. Mobile behaves naturally without overlap. */}
             <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm lg:col-span-1 h-fit lg:sticky lg:top-6 relative z-20 border border-gray-100">
               <h2 className="text-xl font-bold mb-6 text-gray-800">
                 {editItemId ? 'Edit Item' : 'Add New Item'}
@@ -385,7 +393,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* SUPERB BEST: Dropdown + Add New System */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">Collection / Category</label>
                   {!isCustomCategory ? (
@@ -483,7 +490,6 @@ export default function Home() {
               </form>
             </div>
 
-            {/* CHANGED: List is completely separate with relative z-10 for perfect natural flow */}
             <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm lg:col-span-2 relative z-10 border border-gray-100">
               <h2 className="text-xl font-bold mb-6 text-gray-800">Manage Menu Items ({menuItems.length})</h2>
               {isLoading ? (
@@ -492,7 +498,6 @@ export default function Home() {
                   <p className="text-gray-500 font-medium">Loading items from database...</p>
                 </div>
               ) : (
-                /* RESPONSIVE MOBILE-FIRST CARDS FOR ADMIN */
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {menuItems.map((item) => (
                     <div key={item._id} className="border border-gray-100 bg-slate-50 p-4 rounded-2xl flex gap-4 items-start hover:shadow-md transition-shadow">
@@ -549,7 +554,7 @@ export default function Home() {
   // --- STORE FRONT RENDER ---
   return (
     <>
-      {/* GLOBAL STYLES FOR MAKHAN SMOOTH ANIMATIONS */}
+      {/* GLOBAL STYLES FOR MAKHAN SMOOTH ANIMATIONS & HIDE SCROLLBAR */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes fadeUpSmooth {
           0% { opacity: 0; transform: translateY(30px) scale(0.95); }
@@ -560,10 +565,32 @@ export default function Home() {
           animation: fadeUpSmooth 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
           will-change: transform, opacity;
         }
+        
+        /* Auto-Scrolling Marquee Animation */
+        @keyframes scrollX {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(calc(-50% - 0.75rem)); } /* -50% width minus half of the gap-6 (24px) */
+        }
+        .animate-scroll {
+          animation: scrollX 30s linear infinite;
+          width: max-content;
+        }
+        .animate-scroll:hover {
+          animation-play-state: paused;
+        }
+
+        /* Hide scrollbar */
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
       `}} />
 
       <main className="min-h-screen bg-slate-50 font-sans selection:bg-orange-200 flex flex-col overflow-x-hidden">
-        <nav className="fixed top-0 left-0 w-full z-[100] bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
+        <nav className="fixed top-0 left-0 w-full z-[90] bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
           <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
             <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">
               Fun<span className="text-orange-600">&</span>Foods
@@ -595,11 +622,11 @@ export default function Home() {
           </div>
         </nav>
 
-        <section className="relative w-full h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden">
+        <section className="relative w-full h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden mt-[72px]">
           <div className="absolute inset-0 bg-cover bg-center z-0 scale-105 animate-[pulse_10s_ease-in-out_infinite]" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=2000')" }} />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/70 to-transparent z-10" />
           
-          <div className="relative z-20 text-center px-6 max-w-3xl mx-auto mt-16" style={{ animation: 'fadeUpSmooth 1s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}>
+          <div className="relative z-20 text-center px-6 max-w-3xl mx-auto mt-8" style={{ animation: 'fadeUpSmooth 1s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}>
             <span className="inline-block py-1.5 px-4 rounded-full bg-orange-500/20 text-orange-300 backdrop-blur-sm border border-orange-500/30 text-sm font-bold mb-6">
               Rani's Premium Cloud Kitchen
             </span>
@@ -647,12 +674,12 @@ export default function Home() {
                     </h4>
                   </div>
 
-                  <div className="flex overflow-x-auto gap-6 pb-8 pt-2 snap-x snap-mandatory px-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                  <div className="flex overflow-x-auto gap-6 pb-8 pt-2 snap-x snap-mandatory px-1 hide-scrollbar">
                     {items.map((item, itemIndex) => (
                       <div 
                         key={item._id} 
                         className="animate-stagger-card snap-start shrink-0 w-[280px] md:w-[320px] group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl border border-gray-100 transition-all duration-300 flex flex-col relative hover:-translate-y-1"
-                        style={{ animationDelay: `${(categoryIndex * 0.1) + (itemIndex * 0.1)}s` }} // Super smooth makhan delay calculation
+                        style={{ animationDelay: `${(categoryIndex * 0.1) + (itemIndex * 0.1)}s` }}
                       >
                         
                         {item.compareAtPrice && item.compareAtPrice > item.price && (
@@ -735,9 +762,52 @@ export default function Home() {
           )}
         </section>
 
-        <footer className="bg-slate-900 text-gray-300 py-16 border-t-4 border-orange-600 mt-auto">
-          <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+        {/* --- NAYA: PREMIUM TESTIMONIALS SECTION --- */}
+        <section className="bg-[#0b1120] py-20 sm:py-28 relative overflow-hidden border-t-4 border-slate-800">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center z-0 opacity-[0.03] pointer-events-none select-none overflow-hidden flex justify-center">
+             <h2 className="text-[12vw] font-black text-white tracking-widest whitespace-nowrap">TESTIMONIAL</h2>
+          </div>
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+            <div className="text-center mb-12">
+              <h3 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">Loved By Our Foodies</h3>
+              <p className="text-slate-400 font-medium max-w-xl mx-auto">See what our customers have to say about our premium quality, authentic taste, and lightning-fast delivery.</p>
+            </div>
             
+            {/* MARQUEE WRAPPER */}
+            <div className="relative flex overflow-hidden group">
+               {/* Fade edges for smooth scrolling effect */}
+               <div className="absolute top-0 bottom-0 left-0 w-12 sm:w-20 bg-gradient-to-r from-[#0b1120] to-transparent z-10 pointer-events-none"></div>
+               <div className="absolute top-0 bottom-0 right-0 w-12 sm:w-20 bg-gradient-to-l from-[#0b1120] to-transparent z-10 pointer-events-none"></div>
+               
+               <div className="animate-scroll flex gap-6 items-stretch">
+                 {/* Double the array map for infinite seamless scroll */}
+                 {[...testimonialsData, ...testimonialsData].map((testimonial, idx) => (
+                    <div key={idx} className="w-[300px] sm:w-[350px] shrink-0 bg-[#151c2f] rounded-3xl p-6 border border-slate-800 flex flex-col shadow-xl hover:border-slate-600 transition-colors cursor-pointer">
+                      <div className="flex items-center gap-4 mb-5">
+                        <img src={testimonial.img} alt={testimonial.name} className="w-14 h-14 rounded-full object-cover border-2 border-slate-700" />
+                        <div>
+                          <h4 className="text-white font-bold flex items-center gap-1.5 text-lg">
+                            {testimonial.name}
+                            {/* Blue Tick SVG */}
+                            <svg className="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.9 14.7L6 12.6l1.5-1.5 2.6 2.6 6.4-6.4 1.5 1.5-7.9 7.9z" />
+                            </svg>
+                          </h4>
+                          <p className="text-sm text-slate-400">{testimonial.handle}</p>
+                        </div>
+                      </div>
+                      <p className="text-slate-300 text-sm leading-relaxed mb-6 flex-grow">"{testimonial.text}"</p>
+                      <p className="text-xs text-slate-500 font-medium">{testimonial.date}</p>
+                    </div>
+                 ))}
+               </div>
+            </div>
+          </div>
+        </section>
+
+        <footer className="bg-slate-900 text-gray-300 py-16 mt-auto">
+          <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
             <div className="space-y-4">
               <h1 className="text-3xl font-extrabold text-white tracking-tight">
                 Fun<span className="text-orange-500">&</span>Foods
@@ -812,6 +882,7 @@ export default function Home() {
           </div>
         </footer>
 
+        {/* LOGIN MODAL */}
         {showLoginModal && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
             <div className="bg-white p-8 rounded-3xl w-full max-w-sm shadow-2xl relative border border-gray-100 animate-in zoom-in duration-300">
@@ -850,65 +921,80 @@ export default function Home() {
           </div>
         )}
 
-        {/* CART SIDEBAR */}
-        {isCartOpen && (
-          <div className="fixed inset-0 z-[100] flex justify-end bg-slate-900/60 backdrop-blur-sm transition-opacity">
-            <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-              <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-slate-50">
-                <h3 className="font-extrabold text-xl text-gray-900 flex items-center gap-2">
-                  <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                  Your Order ({cart.length})
-                </h3>
-                <button onClick={() => setIsCartOpen(false)} className="text-gray-400 hover:text-gray-900 bg-white rounded-full p-1.5 shadow-sm border border-gray-100 transition-colors">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50">
-                {cart.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-gray-500 space-y-4">
-                    <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center shadow-inner">
-                      <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
-                    </div>
-                    <p className="font-bold text-gray-600">Your cart is empty.</p>
-                    <button onClick={() => setIsCartOpen(false)} className="text-orange-600 font-bold hover:underline">Browse Menu</button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {cart.map(item => (
-                      <div key={item._id} className="flex gap-4 items-center bg-white p-4 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
-                        <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-xl border border-gray-50" />
-                        <div className="flex-1">
-                          <h4 className="font-bold text-gray-900 text-sm leading-tight">{item.name}</h4>
-                          <p className="text-sm font-bold text-gray-500 mt-1">₹{item.price} x {item.cartQuantity}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-extrabold text-orange-600 text-lg">₹{item.price * item.cartQuantity}</p>
-                          <button onClick={() => removeFromCart(item._id)} className="text-xs text-red-500 hover:text-white hover:bg-red-500 border border-transparent hover:border-red-500 rounded px-2 py-1 transition-colors mt-1 font-bold">Remove</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+        {/* MAKHAN SMOOTH CART SIDEBAR / BOTTOM SHEET */}
+        {/* Backdrop Element */}
+        <div 
+          className={`fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm transition-opacity duration-500 ease-in-out ${isCartOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} 
+          onClick={() => setIsCartOpen(false)}
+        ></div>
 
-              {cart.length > 0 && (
-                <div className="p-6 bg-white border-t border-gray-100 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] z-10 relative">
-                  <div className="flex justify-between items-center mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                    <span className="text-gray-600 font-bold">Food Total</span>
-                    <span className="font-extrabold text-2xl text-gray-900">₹{getCartTotal()}</span>
-                  </div>
-                  <button
-                    onClick={() => setIsCheckoutOpen(true)}
-                    className="w-full bg-orange-600 hover:bg-orange-700 text-white font-extrabold py-4 rounded-2xl transition-all shadow-xl shadow-orange-600/30 text-lg flex justify-center items-center gap-2 active:scale-[0.98]"
-                  >
-                    Proceed to Checkout <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                  </button>
-                </div>
-              )}
-            </div>
+        {/* Cart Container */}
+        <div 
+          className={`fixed z-[101] bg-white flex flex-col shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]
+            bottom-0 left-0 md:left-auto md:right-0 md:top-0 md:bottom-auto
+            w-full md:w-[450px] h-[85vh] md:h-full 
+            rounded-t-3xl md:rounded-none
+            ${isCartOpen ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-y-0 md:translate-x-full'}
+          `}
+        >
+          {/* Top handle pill for mobile to show it's a draggable sheet (visual cue) */}
+          <div className="w-full flex justify-center pt-3 pb-1 md:hidden">
+            <div className="w-12 h-1.5 bg-gray-200 rounded-full"></div>
           </div>
-        )}
+
+          <div className="px-6 py-4 md:py-6 border-b border-gray-100 flex justify-between items-center bg-slate-50 md:bg-white rounded-t-3xl md:rounded-none">
+            <h3 className="font-extrabold text-xl text-gray-900 flex items-center gap-2">
+              <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+              Your Order ({cart.length})
+            </h3>
+            <button onClick={() => setIsCartOpen(false)} className="text-gray-400 hover:text-gray-900 bg-white md:bg-gray-50 rounded-full p-2 shadow-sm border border-gray-100 transition-colors">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50">
+            {cart.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-gray-500 space-y-4">
+                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center shadow-inner">
+                  <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                </div>
+                <p className="font-bold text-gray-600">Your cart is empty.</p>
+                <button onClick={() => setIsCartOpen(false)} className="text-orange-600 font-bold hover:underline">Browse Menu</button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {cart.map(item => (
+                  <div key={item._id} className="flex gap-4 items-center bg-white p-4 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
+                    <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-xl border border-gray-50" />
+                    <div className="flex-1">
+                      <h4 className="font-bold text-gray-900 text-sm leading-tight">{item.name}</h4>
+                      <p className="text-sm font-bold text-gray-500 mt-1">₹{item.price} x {item.cartQuantity}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-extrabold text-orange-600 text-lg">₹{item.price * item.cartQuantity}</p>
+                      <button onClick={() => removeFromCart(item._id)} className="text-xs text-red-500 hover:text-white hover:bg-red-500 border border-transparent hover:border-red-500 rounded px-2 py-1 transition-colors mt-1 font-bold">Remove</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {cart.length > 0 && (
+            <div className="p-6 bg-white border-t border-gray-100 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] z-10 relative">
+              <div className="flex justify-between items-center mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <span className="text-gray-600 font-bold">Food Total</span>
+                <span className="font-extrabold text-2xl text-gray-900">₹{getCartTotal()}</span>
+              </div>
+              <button
+                onClick={() => { setIsCartOpen(false); setTimeout(() => setIsCheckoutOpen(true), 300); }}
+                className="w-full bg-orange-600 hover:bg-orange-700 text-white font-extrabold py-4 rounded-2xl transition-all shadow-xl shadow-orange-600/30 text-lg flex justify-center items-center gap-2 active:scale-[0.98]"
+              >
+                Proceed to Checkout <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* CHECKOUT MODAL */}
         {isCheckoutOpen && (
