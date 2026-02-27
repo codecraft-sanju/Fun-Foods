@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 // TypeScript interface for our MongoDB Item
 interface MenuItemType {
@@ -27,6 +27,42 @@ const testimonialsData = [
   { id: 5, name: 'Sneha Kapoor', handle: '@neha98', text: 'Great taste and premium packaging. The Chinese platters are just mind-blowing. Will definitely order again.', date: '08 Apr 2025', img: 'https://i.pravatar.cc/150?img=5' },
   { id: 6, name: 'Bhagwan Jha', handle: '@bkjha', text: 'Best catering and daily food service in the area. Food quality never drops. 10/10 service every single time.', date: '07 Dec 2025', img: 'https://i.pravatar.cc/150?img=8' }
 ];
+
+// NAYA: Scroll Animation ke liye custom component jisse scroll karne par item aaye
+function ScrollReveal({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) {
+  const [isVisible, setIsVisible] = useState(false);
+  const domRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const currentRef = domRef.current;
+    if (!currentRef) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(currentRef);
+        }
+      },
+      { threshold: 0.15 } // Jab 15% card screen par aaye tab animation trigger hoga
+    );
+
+    observer.observe(currentRef);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={domRef}
+      className={`${className} transform transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-16 scale-95'
+      }`}
+      style={{ transitionDelay: `${delay}s` }}
+    >
+      {children}
+    </div>
+  );
+}
 
 export default function Home() {
   // --- Global States ---
@@ -88,7 +124,7 @@ export default function Home() {
   };
 
   // NAYA: Dynamic categories list banana (Default + Database existing categories)
-  const defaultCategories = ['Fast Food', 'Pizza', 'Burger', 'Chinese', 'Beverages', 'Thali'];
+  const defaultCategories = ['Fast Food', 'Pizza', 'Burger', 'Chinese', 'Beverages'];
   const existingCategories = menuItems.map(item => item.type);
   const allCategories = Array.from(new Set([...defaultCategories, ...existingCategories]));
 
@@ -560,22 +596,27 @@ export default function Home() {
           0% { opacity: 0; transform: translateY(30px) scale(0.95); }
           100% { opacity: 1; transform: translateY(0) scale(1); }
         }
-        .animate-stagger-card {
-          opacity: 0;
-          animation: fadeUpSmooth 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-          will-change: transform, opacity;
+        
+        /* Auto-Scrolling Marquee Animations (Double Direction) */
+        @keyframes scrollXLeft {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(calc(-50% - 0.5rem)); }
+        }
+        @keyframes scrollXRight {
+          0% { transform: translateX(calc(-50% - 0.5rem)); }
+          100% { transform: translateX(0); }
         }
         
-        /* Auto-Scrolling Marquee Animation */
-        @keyframes scrollX {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(calc(-50% - 0.75rem)); } /* -50% width minus half of the gap-6 (24px) */
-        }
-        .animate-scroll {
-          animation: scrollX 30s linear infinite;
+        .animate-scroll-left {
+          animation: scrollXLeft 30s linear infinite;
           width: max-content;
         }
-        .animate-scroll:hover {
+        .animate-scroll-right {
+          animation: scrollXRight 30s linear infinite;
+          width: max-content;
+        }
+        
+        .animate-scroll-left:hover, .animate-scroll-right:hover {
           animation-play-state: paused;
         }
 
@@ -624,14 +665,16 @@ export default function Home() {
 
         <section className="relative w-full h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden mt-[72px]">
           <div className="absolute inset-0 bg-cover bg-center z-0 scale-105 animate-[pulse_10s_ease-in-out_infinite]" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=2000')" }} />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/70 to-transparent z-10" />
+          
+          {/* NAYA: White dhundhlapan hatakar clear image ke liye halka sa black shade lagaya taaki text bacha rahe */}
+          <div className="absolute inset-0 bg-black/20 z-10" /> 
           
           <div className="relative z-20 text-center px-6 max-w-3xl mx-auto mt-8" style={{ animation: 'fadeUpSmooth 1s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}>
-            <span className="inline-block py-1.5 px-4 rounded-full bg-orange-500/20 text-orange-300 backdrop-blur-sm border border-orange-500/30 text-sm font-bold mb-6">
+            <span className="inline-block py-1.5 px-4 rounded-full bg-orange-500/80 text-white backdrop-blur-sm border border-orange-500 text-sm font-bold mb-6 shadow-md">
               Rani's Premium Cloud Kitchen
             </span>
-            <h2 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight mb-8 leading-tight drop-shadow-lg">
-              Craving Something <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">Delicious?</span>
+            <h2 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight mb-8 leading-tight drop-shadow-2xl">
+              Craving Something <span className="text-orange-400 drop-shadow-lg">Delicious?</span>
             </h2>
             
             <div className="relative max-w-xl mx-auto group">
@@ -665,86 +708,94 @@ export default function Home() {
             </div>
           ) : (
             <div className="space-y-14">
-              {Object.entries(groupedItems).map(([category, items], categoryIndex) => (
+              {Object.entries(groupedItems).map(([category, items]) => (
                 <div key={category} className="w-full">
-                  <div className="flex justify-between items-center mb-6 px-1">
-                    <h4 className="text-2xl font-extrabold text-gray-900 capitalize flex items-center gap-3">
-                      {category}
-                      <span className="text-sm font-bold bg-orange-100 text-orange-700 px-3 py-1 rounded-full shadow-sm">{items.length} items</span>
-                    </h4>
-                  </div>
+                  <ScrollReveal>
+                    <div className="flex justify-between items-center mb-6 px-1">
+                      <h4 className="text-2xl font-extrabold text-gray-900 capitalize flex items-center gap-3">
+                        {category}
+                        <span className="text-sm font-bold bg-orange-100 text-orange-700 px-3 py-1 rounded-full shadow-sm">{items.length} items</span>
+                      </h4>
+                    </div>
+                  </ScrollReveal>
 
                   <div className="flex overflow-x-auto gap-6 pb-8 pt-2 snap-x snap-mandatory px-1 hide-scrollbar">
                     {items.map((item, itemIndex) => (
-                      <div 
-                        key={item._id} 
-                        className="animate-stagger-card snap-start shrink-0 w-[280px] md:w-[320px] group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl border border-gray-100 transition-all duration-300 flex flex-col relative hover:-translate-y-1"
-                        style={{ animationDelay: `${(categoryIndex * 0.1) + (itemIndex * 0.1)}s` }}
-                      >
-                        
-                        {item.compareAtPrice && item.compareAtPrice > item.price && (
-                          <div className="absolute top-4 right-4 z-20">
-                            <span className="bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-lg border-2 border-white animate-pulse">
-                              {calculateDiscount(item.price, item.compareAtPrice)}% OFF
-                            </span>
-                          </div>
-                        )}
+                      <div key={item._id} className="snap-start shrink-0 w-[280px] md:w-[320px] h-full">
+                        {/* NAYA: ScrollReveal lagaya gaya h taki card samne aane par animate ho */}
+                        <ScrollReveal delay={(itemIndex % 4) * 0.1} className="h-full">
+                          <div className="group h-full bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl border border-gray-100 transition-all duration-300 flex flex-col relative hover:-translate-y-1">
+                            
+                            {item.compareAtPrice && item.compareAtPrice > item.price && (
+                              <div className="absolute top-4 right-4 z-20">
+                                <span className="bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-lg border-2 border-white animate-pulse">
+                                  {calculateDiscount(item.price, item.compareAtPrice)}% OFF
+                                </span>
+                              </div>
+                            )}
 
-                        <div className="relative h-56 bg-gray-100 overflow-hidden">
-                          {!loadedImages[item._id] && (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-                            </div>
-                          )}
-                          <img 
-                            src={item.image} 
-                            alt={item.name} 
-                            onLoad={() => handleImageLoad(item._id)}
-                            className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out ${loadedImages[item._id] ? 'opacity-100' : 'opacity-0'}`} 
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        </div>
-
-                        <div className="p-5 flex flex-col flex-grow bg-white relative z-10">
-                          <div className="flex justify-between items-start mb-2">
-                            <h2 className="text-xl font-bold text-gray-900 leading-tight pr-2 group-hover:text-orange-600 transition-colors">{item.name}</h2>
-                            <div className="flex flex-col items-end shrink-0">
-                              <p className="text-xl font-extrabold text-orange-600">₹{item.price}</p>
-                              {item.compareAtPrice && item.compareAtPrice > item.price && (
-                                <p className="text-xs font-bold text-gray-400 line-through">₹{item.compareAtPrice}</p>
+                            {/* UPDATED HEIGHT: h-56 to h-48 */}
+                            <div className="relative h-48 bg-gray-100 overflow-hidden shrink-0">
+                              {!loadedImages[item._id] && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                                </div>
                               )}
+                              <img 
+                                src={item.image} 
+                                alt={item.name} 
+                                onLoad={() => handleImageLoad(item._id)}
+                                className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out ${loadedImages[item._id] ? 'opacity-100' : 'opacity-0'}`} 
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                             </div>
-                          </div>
-                          
-                          <p className="text-sm text-gray-500 mb-6 line-clamp-2 h-10 font-medium">{item.description}</p>
 
-                          <div className="mt-auto">
-                            <div className="flex items-center justify-between mb-4 bg-slate-50 p-2 rounded-2xl border border-slate-100">
-                              <span className="text-sm font-bold text-gray-700 ml-2">Qty</span>
-                              <div className="flex items-center space-x-3 bg-white rounded-xl p-1 shadow-sm border border-gray-100">
-                                <button onClick={() => handleQuantityChange(item._id, -1)} className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors active:scale-95">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" /></svg>
-                                </button>
-                                <span className="w-4 text-center font-bold text-gray-900 text-sm">{quantities[item._id] || 1}</span>
-                                <button onClick={() => handleQuantityChange(item._id, 1)} className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors active:scale-95">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+                            {/* UPDATED PADDING: p-5 to p-4 */}
+                            <div className="p-4 flex flex-col flex-grow bg-white relative z-10">
+                              <div className="flex justify-between items-start mb-2">
+                                <h2 className="text-xl font-bold text-gray-900 leading-tight pr-2 group-hover:text-orange-600 transition-colors">{item.name}</h2>
+                                <div className="flex flex-col items-end shrink-0">
+                                  <p className="text-xl font-extrabold text-orange-600">₹{item.price}</p>
+                                  {item.compareAtPrice && item.compareAtPrice > item.price && (
+                                    <p className="text-xs font-bold text-gray-400 line-through">₹{item.compareAtPrice}</p>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* UPDATED MARGIN: mb-6 to mb-3 */}
+                              <p className="text-sm text-gray-500 mb-3 line-clamp-2 h-10 font-medium">{item.description}</p>
+
+                              <div className="mt-auto">
+                                {/* UPDATED MARGIN: mb-4 to mb-3 */}
+                                <div className="flex items-center justify-between mb-3 bg-slate-50 p-2 rounded-2xl border border-slate-100">
+                                  <span className="text-sm font-bold text-gray-700 ml-2">Qty</span>
+                                  <div className="flex items-center space-x-3 bg-white rounded-xl p-1 shadow-sm border border-gray-100">
+                                    <button onClick={() => handleQuantityChange(item._id, -1)} className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors active:scale-95">
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" /></svg>
+                                    </button>
+                                    <span className="w-4 text-center font-bold text-gray-900 text-sm">{quantities[item._id] || 1}</span>
+                                    <button onClick={() => handleQuantityChange(item._id, 1)} className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors active:scale-95">
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* UPDATED BUTTON PADDING: py-3.5 to py-3 */}
+                                <button
+                                  onClick={() => addToCart(item)}
+                                  disabled={addingItemId === item._id}
+                                  className={`w-full font-bold py-3 rounded-xl transition-all duration-300 flex justify-center items-center gap-2 active:scale-[0.98] ${addingItemId === item._id ? 'bg-orange-400 text-white cursor-wait' : 'bg-orange-100 hover:bg-orange-600 hover:text-white text-orange-700'}`}
+                                >
+                                  {addingItemId === item._id ? (
+                                    <><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> Adding...</>
+                                  ) : (
+                                    <><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg> Add to Cart</>
+                                  )}
                                 </button>
                               </div>
                             </div>
-
-                            <button
-                              onClick={() => addToCart(item)}
-                              disabled={addingItemId === item._id}
-                              className={`w-full font-bold py-3.5 rounded-xl transition-all duration-300 flex justify-center items-center gap-2 active:scale-[0.98] ${addingItemId === item._id ? 'bg-orange-400 text-white cursor-wait' : 'bg-orange-100 hover:bg-orange-600 hover:text-white text-orange-700'}`}
-                            >
-                              {addingItemId === item._id ? (
-                                <><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> Adding...</>
-                              ) : (
-                                <><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg> Add to Cart</>
-                              )}
-                            </button>
                           </div>
-                        </div>
+                        </ScrollReveal>
                       </div>
                     ))}
                   </div>
@@ -754,54 +805,83 @@ export default function Home() {
           )}
 
           {Object.keys(groupedItems).length === 0 && !isLoading && (
-            <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm animate-stagger-card">
-              <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              <p className="text-xl font-bold text-gray-800">No items found.</p>
-              <p className="text-gray-500 mt-2 font-medium">Try searching for something else.</p>
-            </div>
+            <ScrollReveal>
+              <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm">
+                <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <p className="text-xl font-bold text-gray-800">No items found.</p>
+                <p className="text-gray-500 mt-2 font-medium">Try searching for something else.</p>
+              </div>
+            </ScrollReveal>
           )}
         </section>
 
         {/* --- NAYA: PREMIUM TESTIMONIALS SECTION --- */}
-        <section className="bg-[#0b1120] py-20 sm:py-28 relative overflow-hidden border-t-4 border-slate-800">
+        <section className="bg-[#0b1120] py-20 sm:py-24 relative overflow-hidden border-t-4 border-slate-800">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center z-0 opacity-[0.03] pointer-events-none select-none overflow-hidden flex justify-center">
              <h2 className="text-[12vw] font-black text-white tracking-widest whitespace-nowrap">TESTIMONIAL</h2>
           </div>
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
-            <div className="text-center mb-12">
-              <h3 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">Loved By Our Foodies</h3>
-              <p className="text-slate-400 font-medium max-w-xl mx-auto">See what our customers have to say about our premium quality, authentic taste, and lightning-fast delivery.</p>
+          <div className="relative z-10">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center mb-10 sm:mb-14">
+              <ScrollReveal>
+                <h3 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">Loved By Our Foodies</h3>
+                <p className="text-slate-400 font-medium max-w-xl mx-auto text-sm sm:text-base">See what our customers have to say about our premium quality, authentic taste, and lightning-fast delivery.</p>
+              </ScrollReveal>
             </div>
             
-            {/* MARQUEE WRAPPER */}
-            <div className="relative flex overflow-hidden group">
-               {/* Fade edges for smooth scrolling effect */}
-               <div className="absolute top-0 bottom-0 left-0 w-12 sm:w-20 bg-gradient-to-r from-[#0b1120] to-transparent z-10 pointer-events-none"></div>
-               <div className="absolute top-0 bottom-0 right-0 w-12 sm:w-20 bg-gradient-to-l from-[#0b1120] to-transparent z-10 pointer-events-none"></div>
+            {/* FULL WIDTH MARQUEE WRAPPERS */}
+            <div className="relative w-full overflow-hidden flex flex-col gap-4 sm:gap-6">
+               <div className="absolute top-0 bottom-0 left-0 w-12 sm:w-24 bg-gradient-to-r from-[#0b1120] to-transparent z-20 pointer-events-none"></div>
+               <div className="absolute top-0 bottom-0 right-0 w-12 sm:w-24 bg-gradient-to-l from-[#0b1120] to-transparent z-20 pointer-events-none"></div>
                
-               <div className="animate-scroll flex gap-6 items-stretch">
-                 {/* Double the array map for infinite seamless scroll */}
-                 {[...testimonialsData, ...testimonialsData].map((testimonial, idx) => (
-                    <div key={idx} className="w-[300px] sm:w-[350px] shrink-0 bg-[#151c2f] rounded-3xl p-6 border border-slate-800 flex flex-col shadow-xl hover:border-slate-600 transition-colors cursor-pointer">
-                      <div className="flex items-center gap-4 mb-5">
-                        <img src={testimonial.img} alt={testimonial.name} className="w-14 h-14 rounded-full object-cover border-2 border-slate-700" />
-                        <div>
-                          <h4 className="text-white font-bold flex items-center gap-1.5 text-lg">
-                            {testimonial.name}
-                            {/* Blue Tick SVG */}
-                            <svg className="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.9 14.7L6 12.6l1.5-1.5 2.6 2.6 6.4-6.4 1.5 1.5-7.9 7.9z" />
-                            </svg>
-                          </h4>
-                          <p className="text-sm text-slate-400">{testimonial.handle}</p>
+               {/* ROW 1: Right to Left */}
+               <div className="relative flex group w-full">
+                 <div className="animate-scroll-left flex gap-4 items-stretch px-4">
+                   {[...testimonialsData, ...testimonialsData].map((testimonial, idx) => (
+                      <div key={`row1-${idx}`} className="w-[260px] sm:w-[320px] shrink-0 bg-[#151c2f] rounded-2xl p-4 sm:p-5 border border-slate-800 flex flex-col shadow-xl hover:border-slate-600 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3 mb-3 sm:mb-4">
+                          <img src={testimonial.img} alt={testimonial.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-slate-700" />
+                          <div>
+                            <h4 className="text-white font-bold flex items-center gap-1.5 text-sm sm:text-base">
+                              {testimonial.name}
+                              <svg className="w-3.5 h-3.5 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.9 14.7L6 12.6l1.5-1.5 2.6 2.6 6.4-6.4 1.5 1.5-7.9 7.9z" />
+                              </svg>
+                            </h4>
+                            <p className="text-[11px] sm:text-xs text-slate-400">{testimonial.handle}</p>
+                          </div>
                         </div>
+                        <p className="text-slate-300 text-xs sm:text-sm leading-relaxed mb-4 flex-grow">"{testimonial.text}"</p>
+                        <p className="text-[10px] sm:text-xs text-slate-500 font-medium">{testimonial.date}</p>
                       </div>
-                      <p className="text-slate-300 text-sm leading-relaxed mb-6 flex-grow">"{testimonial.text}"</p>
-                      <p className="text-xs text-slate-500 font-medium">{testimonial.date}</p>
-                    </div>
-                 ))}
+                   ))}
+                 </div>
                </div>
+
+               {/* ROW 2: Left to Right */}
+               <div className="relative flex group w-full">
+                 <div className="animate-scroll-right flex gap-4 items-stretch px-4">
+                   {[...testimonialsData, ...testimonialsData].reverse().map((testimonial, idx) => (
+                      <div key={`row2-${idx}`} className="w-[260px] sm:w-[320px] shrink-0 bg-[#151c2f] rounded-2xl p-4 sm:p-5 border border-slate-800 flex flex-col shadow-xl hover:border-slate-600 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3 mb-3 sm:mb-4">
+                          <img src={testimonial.img} alt={testimonial.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-slate-700" />
+                          <div>
+                            <h4 className="text-white font-bold flex items-center gap-1.5 text-sm sm:text-base">
+                              {testimonial.name}
+                              <svg className="w-3.5 h-3.5 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.9 14.7L6 12.6l1.5-1.5 2.6 2.6 6.4-6.4 1.5 1.5-7.9 7.9z" />
+                              </svg>
+                            </h4>
+                            <p className="text-[11px] sm:text-xs text-slate-400">{testimonial.handle}</p>
+                          </div>
+                        </div>
+                        <p className="text-slate-300 text-xs sm:text-sm leading-relaxed mb-4 flex-grow">"{testimonial.text}"</p>
+                        <p className="text-[10px] sm:text-xs text-slate-500 font-medium">{testimonial.date}</p>
+                      </div>
+                   ))}
+                 </div>
+               </div>
+
             </div>
           </div>
         </section>
