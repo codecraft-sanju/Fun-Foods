@@ -448,7 +448,11 @@ export default function Home() {
       <main className="min-h-screen bg-slate-100 p-4 sm:p-6 font-sans">
         <div className="max-w-6xl mx-auto">
           <header className="flex flex-col sm:flex-row justify-between items-center bg-white p-4 sm:p-6 rounded-2xl shadow-sm mb-4 sm:mb-8 gap-4 relative z-30">
-            <h1 className="text-2xl font-bold text-gray-900">Fun & Foods <span className="text-orange-600">Admin</span></h1>
+            {/* MODIFIED: Added logo to admin header */}
+            <div className="flex items-center gap-3">
+              <img src="/logofun&foods.png" alt="Fun & Foods Logo" className="h-10 w-auto object-contain" />
+              <h1 className="text-2xl font-bold text-gray-900">Fun & Foods <span className="text-orange-600">Admin</span></h1>
+            </div>
             <button onClick={handleLogout} className="w-full sm:w-auto bg-gray-900 text-white px-6 py-3 rounded-xl font-medium hover:bg-gray-800 transition">Logout</button>
           </header>
 
@@ -734,9 +738,13 @@ export default function Home() {
       <main className="min-h-screen bg-slate-50 font-sans selection:bg-orange-200 flex flex-col overflow-x-hidden">
         <nav className="fixed top-0 left-0 w-full z-[90] bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
           <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">
-              Fun<span className="text-orange-600">&</span>Foods
-            </h1>
+            {/* MODIFIED: Added logo to store navbar */}
+            <div className="flex items-center gap-3">
+              <img src="/logofun&foods.png" alt="Fun & Foods Logo" className="h-10 w-auto object-contain" />
+              <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">
+                Fun<span className="text-orange-600">&</span>Foods
+              </h1>
+            </div>
             
             <div className="flex items-center gap-6">
               <button 
@@ -914,9 +922,13 @@ export default function Home() {
         <footer className="bg-slate-900 text-gray-300 py-16 mt-auto">
           <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
             <div className="space-y-4">
-              <h1 className="text-3xl font-extrabold text-white tracking-tight">
-                Fun<span className="text-orange-500">&</span>Foods
-              </h1>
+              {/* MODIFIED: Added logo to footer */}
+              <div className="flex items-center gap-3">
+                <img src="/logofun&foods.png" alt="Fun & Foods Logo" className="h-12 w-auto object-contain bg-white/90 p-1 rounded-xl" />
+                <h1 className="text-3xl font-extrabold text-white tracking-tight">
+                  Fun<span className="text-orange-500">&</span>Foods
+                </h1>
+              </div>
               <p className="text-sm text-gray-400 leading-relaxed font-medium">
                 We bring the best authentic taste right to your doorstep. Experience premium quality ingredients and mouth-watering flavors from Rani's finest cloud kitchen.
               </p>
