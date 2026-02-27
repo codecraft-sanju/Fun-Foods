@@ -97,6 +97,9 @@ export default function Home() {
   // NAYA: Custom Category Toggle State
   const [isCustomCategory, setIsCustomCategory] = useState(false);
 
+  // MODIFIED: Added state for mobile admin tabs
+  const [adminTab, setAdminTab] = useState<'list' | 'form' | 'settings'>('list');
+
   const ownerWhatsAppNumber = '917878337311'; 
 
   useEffect(() => {
@@ -329,6 +332,8 @@ export default function Home() {
           setNewItem({ name: '', description: '', price: '', compareAtPrice: '', type: allCategories[0] || 'Fast Food', image: '' });
           setIsCustomCategory(false);
           alert('Item successfully update ho gaya!');
+          // MODIFIED: Added tab switch to list after successful edit
+          setAdminTab('list');
         } else {
           alert('Item update karne me error aayi.');
         }
@@ -345,6 +350,8 @@ export default function Home() {
           setNewItem({ name: '', description: '', price: '', compareAtPrice: '', type: allCategories[0] || 'Fast Food', image: '' }); 
           setIsCustomCategory(false);
           alert('Item successfully add ho gaya!');
+          // MODIFIED: Added tab switch to list after successful add
+          setAdminTab('list');
         } else {
           alert('Item add karne me error aayi.');
         }
@@ -373,6 +380,8 @@ export default function Home() {
       type: item.type,
       image: item.image
     });
+    // MODIFIED: Added automatic switch to form tab on mobile when edit is clicked
+    setAdminTab('form');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -380,6 +389,8 @@ export default function Home() {
     setEditItemId(null);
     setNewItem({ name: '', description: '', price: '', compareAtPrice: '', type: allCategories[0] || 'Fast Food', image: '' });
     setIsCustomCategory(false);
+    // MODIFIED: Added return to list tab on cancel
+    setAdminTab('list');
   };
 
   const handleDeleteItem = async (id: string) => {
@@ -436,137 +447,166 @@ export default function Home() {
     return (
       <main className="min-h-screen bg-slate-100 p-4 sm:p-6 font-sans">
         <div className="max-w-6xl mx-auto">
-          <header className="flex flex-col sm:flex-row justify-between items-center bg-white p-4 sm:p-6 rounded-2xl shadow-sm mb-6 sm:mb-8 gap-4 relative z-30">
+          <header className="flex flex-col sm:flex-row justify-between items-center bg-white p-4 sm:p-6 rounded-2xl shadow-sm mb-4 sm:mb-8 gap-4 relative z-30">
             <h1 className="text-2xl font-bold text-gray-900">Fun & Foods <span className="text-orange-600">Admin</span></h1>
             <button onClick={handleLogout} className="w-full sm:w-auto bg-gray-900 text-white px-6 py-3 rounded-xl font-medium hover:bg-gray-800 transition">Logout</button>
           </header>
 
+          {/* MODIFIED: Added Mobile Tabs Navigation */}
+          <div className="flex lg:hidden mb-6 bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 gap-1 overflow-x-auto hide-scrollbar">
+            <button 
+              onClick={() => setAdminTab('list')} 
+              className={`flex-1 min-w-[100px] py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${adminTab === 'list' ? 'bg-orange-100 text-orange-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+              Menu Items
+            </button>
+            <button 
+              onClick={() => setAdminTab('form')} 
+              className={`flex-1 min-w-[100px] py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${adminTab === 'form' ? 'bg-orange-100 text-orange-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+              {editItemId ? 'Edit Item' : 'Add Item'}
+            </button>
+            <button 
+              onClick={() => setAdminTab('settings')} 
+              className={`flex-1 min-w-[100px] py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${adminTab === 'settings' ? 'bg-orange-100 text-orange-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              Settings
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 relative">
-            <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm lg:col-span-1 h-fit lg:sticky lg:top-6 relative z-20 border border-gray-100">
+            {/* MODIFIED: Added conditional rendering classes based on active tab for mobile */}
+            <div className={`bg-transparent lg:bg-white lg:p-6 rounded-2xl lg:shadow-sm lg:col-span-1 h-fit lg:sticky lg:top-6 relative z-20 lg:border lg:border-gray-100 flex flex-col gap-6 ${adminTab === 'form' || adminTab === 'settings' ? 'block' : 'hidden lg:flex'}`}>
               
               {/* Product Form Section */}
-              <h2 className="text-xl font-bold mb-6 text-gray-800">
-                {editItemId ? 'Edit Item' : 'Add New Item'}
-              </h2>
-              <form onSubmit={handleAddOrEditItem} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Item Name</label>
-                  <input type="text" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} className="w-full p-3.5 rounded-xl border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-orange-500 font-medium text-base outline-none" placeholder="E.g. Veg Burger" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
-                  <textarea value={newItem.description} onChange={e => setNewItem({...newItem, description: e.target.value})} className="w-full p-3.5 rounded-xl border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-orange-500 font-medium text-base outline-none" placeholder="Short description..." rows={2}></textarea>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
+              <div className={`bg-white p-5 sm:p-0 lg:p-0 rounded-2xl shadow-sm lg:shadow-none border border-gray-100 lg:border-none ${adminTab === 'form' ? 'block' : 'hidden lg:block'}`}>
+                <h2 className="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                  {editItemId ? 'Edit Item' : 'Add New Item'}
+                </h2>
+                <form onSubmit={handleAddOrEditItem} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">New Price (₹)</label>
-                    <input type="number" value={newItem.price} onChange={e => setNewItem({...newItem, price: e.target.value})} className="w-full p-3.5 rounded-xl border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-orange-500 font-bold text-base outline-none" placeholder="99" required />
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Item Name</label>
+                    <input type="text" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} className="w-full p-3.5 rounded-xl border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-orange-500 font-medium text-base outline-none" placeholder="E.g. Veg Burger" required />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Old Price (₹)</label>
-                    <input type="number" value={newItem.compareAtPrice} onChange={e => setNewItem({...newItem, compareAtPrice: e.target.value})} className="w-full p-3.5 rounded-xl border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-orange-500 font-medium text-base outline-none" placeholder="149" />
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
+                    <textarea value={newItem.description} onChange={e => setNewItem({...newItem, description: e.target.value})} className="w-full p-3.5 rounded-xl border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-orange-500 font-medium text-base outline-none" placeholder="Short description..." rows={2}></textarea>
                   </div>
-                </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">New Price (₹)</label>
+                      <input type="number" value={newItem.price} onChange={e => setNewItem({...newItem, price: e.target.value})} className="w-full p-3.5 rounded-xl border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-orange-500 font-bold text-base outline-none" placeholder="99" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Old Price (₹)</label>
+                      <input type="number" value={newItem.compareAtPrice} onChange={e => setNewItem({...newItem, compareAtPrice: e.target.value})} className="w-full p-3.5 rounded-xl border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-orange-500 font-medium text-base outline-none" placeholder="149" />
+                    </div>
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Collection / Category</label>
-                  {!isCustomCategory ? (
-                    <select 
-                      value={newItem.type} 
-                      onChange={e => {
-                        if (e.target.value === 'ADD_NEW') {
-                          setIsCustomCategory(true);
-                          setNewItem({...newItem, type: ''});
-                        } else {
-                          setNewItem({...newItem, type: e.target.value});
-                        }
-                      }} 
-                      className="w-full p-3.5 rounded-xl border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-orange-500 font-medium text-base cursor-pointer outline-none"
-                      required
-                    >
-                      <option value="" disabled>Select a collection</option>
-                      {allCategories.map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                      <option value="ADD_NEW" className="font-bold text-orange-600 bg-orange-50">
-                        ➕ Add New Collection...
-                      </option>
-                    </select>
-                  ) : (
-                    <div className="flex gap-2">
-                      <input 
-                        type="text" 
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Collection / Category</label>
+                    {!isCustomCategory ? (
+                      <select 
                         value={newItem.type} 
-                        onChange={e => setNewItem({...newItem, type: e.target.value})} 
-                        className="w-full p-3.5 rounded-xl border border-orange-500 text-gray-900 bg-orange-50 focus:ring-2 focus:ring-orange-500 font-medium text-base outline-none" 
-                        placeholder="Enter new name"
-                        autoFocus
-                        required 
-                      />
+                        onChange={e => {
+                          if (e.target.value === 'ADD_NEW') {
+                            setIsCustomCategory(true);
+                            setNewItem({...newItem, type: ''});
+                          } else {
+                            setNewItem({...newItem, type: e.target.value});
+                          }
+                        }} 
+                        className="w-full p-3.5 rounded-xl border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-orange-500 font-medium text-base cursor-pointer outline-none"
+                        required
+                      >
+                        <option value="" disabled>Select a collection</option>
+                        {allCategories.map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                        <option value="ADD_NEW" className="font-bold text-orange-600 bg-orange-50">
+                          ➕ Add New Collection...
+                        </option>
+                      </select>
+                    ) : (
+                      <div className="flex gap-2">
+                        <input 
+                          type="text" 
+                          value={newItem.type} 
+                          onChange={e => setNewItem({...newItem, type: e.target.value})} 
+                          className="w-full p-3.5 rounded-xl border border-orange-500 text-gray-900 bg-orange-50 focus:ring-2 focus:ring-orange-500 font-medium text-base outline-none" 
+                          placeholder="Enter new name"
+                          autoFocus
+                          required 
+                        />
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            setIsCustomCategory(false);
+                            setNewItem({...newItem, type: allCategories[0] || 'Fast Food'});
+                          }}
+                          className="px-4 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors border border-gray-300"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Upload Image</label>
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={handleImageUpload} 
+                      className="w-full p-2.5 rounded-xl border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-orange-500 outline-none file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100" 
+                    />
+                    {isUploadingImage && (
+                      <div className="flex items-center gap-2 mt-3 text-orange-600">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600"></div>
+                        <p className="text-sm font-medium">Uploading image...</p>
+                      </div>
+                    )}
+                    {newItem.image && !isUploadingImage && (
+                      <div className="mt-4 relative inline-block">
+                        <img src={newItem.image} alt="Preview" className="h-24 w-24 object-cover rounded-2xl border-2 border-orange-500 shadow-md" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                    <button 
+                      type="submit" 
+                      disabled={isUploadingImage || isSavingItem}
+                      className={`w-full text-white font-bold py-3.5 rounded-xl transition-colors flex justify-center items-center gap-2 ${(isUploadingImage || isSavingItem) ? 'bg-gray-400 cursor-not-allowed' : 'bg-orange-600 hover:bg-orange-700 shadow-md'}`}
+                    >
+                      {isSavingItem ? (
+                        <><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> Saving...</>
+                      ) : (
+                        editItemId ? 'Update Item' : 'Save Item'
+                      )}
+                    </button>
+                    
+                    {editItemId && (
                       <button 
                         type="button" 
-                        onClick={() => {
-                          setIsCustomCategory(false);
-                          setNewItem({...newItem, type: allCategories[0] || 'Fast Food'});
-                        }}
-                        className="px-4 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors border border-gray-300"
+                        onClick={handleCancelEdit}
+                        disabled={isSavingItem}
+                        className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3.5 rounded-xl transition-colors border border-gray-200"
                       >
                         Cancel
                       </button>
-                    </div>
-                  )}
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Upload Image</label>
-                  <input 
-                    type="file" 
-                    accept="image/*"
-                    onChange={handleImageUpload} 
-                    className="w-full p-2.5 rounded-xl border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-orange-500 outline-none file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100" 
-                  />
-                  {isUploadingImage && (
-                    <div className="flex items-center gap-2 mt-3 text-orange-600">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600"></div>
-                      <p className="text-sm font-medium">Uploading image...</p>
-                    </div>
-                  )}
-                  {newItem.image && !isUploadingImage && (
-                    <div className="mt-4 relative inline-block">
-                      <img src={newItem.image} alt="Preview" className="h-24 w-24 object-cover rounded-2xl border-2 border-orange-500 shadow-md" />
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                  <button 
-                    type="submit" 
-                    disabled={isUploadingImage || isSavingItem}
-                    className={`w-full text-white font-bold py-3.5 rounded-xl transition-colors flex justify-center items-center gap-2 ${(isUploadingImage || isSavingItem) ? 'bg-gray-400 cursor-not-allowed' : 'bg-orange-600 hover:bg-orange-700 shadow-md'}`}
-                  >
-                    {isSavingItem ? (
-                      <><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> Saving...</>
-                    ) : (
-                      editItemId ? 'Update Item' : 'Save Item'
                     )}
-                  </button>
-                  
-                  {editItemId && (
-                    <button 
-                      type="button" 
-                      onClick={handleCancelEdit}
-                      disabled={isSavingItem}
-                      className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3.5 rounded-xl transition-colors border border-gray-200"
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </div>
-              </form>
+                  </div>
+                </form>
+              </div>
 
               {/* NAYA: Admin Panel Settings Box */}
-              <div className="mt-8 pt-8 border-t border-gray-100">
+              <div className={`bg-white p-5 sm:p-0 lg:p-0 rounded-2xl shadow-sm lg:shadow-none border border-gray-100 lg:border-none lg:mt-8 lg:pt-8 lg:border-t ${adminTab === 'settings' ? 'block' : 'hidden lg:block'}`}>
                 <h2 className="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">
                    <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                    Delivery Charges
@@ -606,8 +646,12 @@ export default function Home() {
               
             </div>
 
-            <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm lg:col-span-2 relative z-10 border border-gray-100">
-              <h2 className="text-xl font-bold mb-6 text-gray-800">Manage Menu Items ({menuItems.length})</h2>
+            {/* MODIFIED: Added conditional rendering class for mobile list tab */}
+            <div className={`bg-white p-5 sm:p-6 rounded-2xl shadow-sm lg:col-span-2 relative z-10 border border-gray-100 ${adminTab === 'list' ? 'block' : 'hidden lg:block'}`}>
+              <h2 className="text-xl font-bold mb-6 text-gray-800 flex items-center justify-between">
+                <span>Manage Menu Items</span>
+                <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm">{menuItems.length} Total</span>
+              </h2>
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-600 mb-4"></div>
