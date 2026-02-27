@@ -445,45 +445,52 @@ export default function Home() {
   // --- ADMIN VIEW RENDER ---
   if (view === 'admin') {
     return (
-      <main className="min-h-screen bg-slate-100 p-4 sm:p-6 font-sans">
-        <div className="max-w-6xl mx-auto">
-          <header className="flex flex-col sm:flex-row justify-between items-center bg-white p-4 sm:p-6 rounded-2xl shadow-sm mb-4 sm:mb-8 gap-4 relative z-30">
-            {/* MODIFIED: Added logo to admin header */}
-            <div className="flex items-center gap-3">
-              <img src="/logofun&foods.png" alt="Fun & Foods Logo" className="h-10 w-auto object-contain" />
-              <h1 className="text-2xl font-bold text-gray-900">Fun & Foods <span className="text-orange-600">Admin</span></h1>
+      <main className="min-h-screen bg-slate-100 font-sans pb-10">
+        
+        {/* MODIFIED: Admin Header & Tabs Fixed / Sticky for both Mobile & Desktop */}
+        <div className="sticky top-0 z-50 bg-slate-100/90 backdrop-blur-md border-b border-slate-200/50 pb-4 shadow-sm/50">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6">
+            <header className="flex flex-row justify-between items-center bg-white p-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-sm gap-2 sm:gap-4 border border-gray-100">
+              {/* MODIFIED: Added logo to admin header */}
+              <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                <img src="/logofun&foods.png" alt="Fun & Foods Logo" className="h-10 sm:h-12 w-auto object-contain" />
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">Fun & Foods <span className="text-orange-600 hidden sm:inline">Admin</span></h1>
+              </div>
+              <button onClick={handleLogout} className="bg-gray-900 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-medium hover:bg-gray-800 transition shadow-sm text-sm sm:text-base shrink-0">Logout</button>
+            </header>
+
+            {/* MODIFIED: Mobile Tabs Navigation (Now inside sticky header so they stay visible) */}
+            <div className="flex lg:hidden mt-4 bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 gap-1 overflow-x-auto hide-scrollbar">
+              <button 
+                onClick={() => setAdminTab('list')} 
+                className={`flex-1 min-w-[100px] py-2.5 sm:py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${adminTab === 'list' ? 'bg-orange-100 text-orange-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+                Menu Items
+              </button>
+              <button 
+                onClick={() => setAdminTab('form')} 
+                className={`flex-1 min-w-[100px] py-2.5 sm:py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${adminTab === 'form' ? 'bg-orange-100 text-orange-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                {editItemId ? 'Edit Item' : 'Add Item'}
+              </button>
+              <button 
+                onClick={() => setAdminTab('settings')} 
+                className={`flex-1 min-w-[100px] py-2.5 sm:py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${adminTab === 'settings' ? 'bg-orange-100 text-orange-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                Settings
+              </button>
             </div>
-            <button onClick={handleLogout} className="w-full sm:w-auto bg-gray-900 text-white px-6 py-3 rounded-xl font-medium hover:bg-gray-800 transition">Logout</button>
-          </header>
-
-          {/* MODIFIED: Added Mobile Tabs Navigation */}
-          <div className="flex lg:hidden mb-6 bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 gap-1 overflow-x-auto hide-scrollbar">
-            <button 
-              onClick={() => setAdminTab('list')} 
-              className={`flex-1 min-w-[100px] py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${adminTab === 'list' ? 'bg-orange-100 text-orange-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-              Menu Items
-            </button>
-            <button 
-              onClick={() => setAdminTab('form')} 
-              className={`flex-1 min-w-[100px] py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${adminTab === 'form' ? 'bg-orange-100 text-orange-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-              {editItemId ? 'Edit Item' : 'Add Item'}
-            </button>
-            <button 
-              onClick={() => setAdminTab('settings')} 
-              className={`flex-1 min-w-[100px] py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${adminTab === 'settings' ? 'bg-orange-100 text-orange-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-              Settings
-            </button>
           </div>
+        </div>
 
+        {/* MODIFIED: Main Grid Container */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 mt-6 sm:mt-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 relative">
-            {/* MODIFIED: Added conditional rendering classes based on active tab for mobile */}
-            <div className={`bg-transparent lg:bg-white lg:p-6 rounded-2xl lg:shadow-sm lg:col-span-1 h-fit lg:sticky lg:top-6 relative z-20 lg:border lg:border-gray-100 flex flex-col gap-6 ${adminTab === 'form' || adminTab === 'settings' ? 'block' : 'hidden lg:flex'}`}>
+            {/* MODIFIED: Adjusted lg:top-[140px] so it sticks perfectly below the new fixed header on desktop */}
+            <div className={`bg-transparent lg:bg-white lg:p-6 rounded-2xl lg:shadow-sm lg:col-span-1 h-fit lg:sticky lg:top-[140px] relative z-20 lg:border lg:border-gray-100 flex flex-col gap-6 ${adminTab === 'form' || adminTab === 'settings' ? 'block' : 'hidden lg:flex'}`}>
               
               {/* Product Form Section */}
               <div className={`bg-white p-5 sm:p-0 lg:p-0 rounded-2xl shadow-sm lg:shadow-none border border-gray-100 lg:border-none ${adminTab === 'form' ? 'block' : 'hidden lg:block'}`}>
@@ -740,7 +747,7 @@ export default function Home() {
           <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
             {/* MODIFIED: Added logo to store navbar */}
             <div className="flex items-center gap-3">
-              <img src="/logofun&foods.png" alt="Fun & Foods Logo" className="h-10 w-auto object-contain" />
+              <img src="/logofun&foods.png" alt="Fun & Foods Logo" className="h-12 w-auto object-contain" />
               <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">
                 Fun<span className="text-orange-600">&</span>Foods
               </h1>
@@ -924,7 +931,7 @@ export default function Home() {
             <div className="space-y-4">
               {/* MODIFIED: Added logo to footer */}
               <div className="flex items-center gap-3">
-                <img src="/logofun&foods.png" alt="Fun & Foods Logo" className="h-12 w-auto object-contain bg-white/90 p-1 rounded-xl" />
+                <img src="/logofun&foods.png" alt="Fun & Foods Logo" className="h-16 w-auto object-contain bg-white/90 p-1 rounded-xl" />
                 <h1 className="text-3xl font-extrabold text-white tracking-tight">
                   Fun<span className="text-orange-500">&</span>Foods
                 </h1>
