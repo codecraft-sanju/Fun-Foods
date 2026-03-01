@@ -19,7 +19,17 @@ interface CartItemType extends MenuItemType {
   cartQuantity: number;
 }
 
-// NAYA: Scroll Animation ke liye custom component jisse scroll karne par item aaye
+// NAYA: Review ka interface
+interface ReviewType {
+  _id: string;
+  name: string;
+  rating: number;
+  comment: string;
+  isApproved: boolean;
+  createdAt: string;
+}
+
+// Scroll Animation ke liye custom component jisse scroll karne par item aaye
 function ScrollReveal({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) {
   const [isVisible, setIsVisible] = useState(false);
   const domRef = useRef<HTMLDivElement>(null);
@@ -94,18 +104,31 @@ export default function Home() {
   const [isSavingItem, setIsSavingItem] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   
-  // NAYA: Custom Category Toggle State
+  // Custom Category Toggle State
   const [isCustomCategory, setIsCustomCategory] = useState(false);
 
-  // MODIFIED: Added state for mobile admin tabs
-  const [adminTab, setAdminTab] = useState<'list' | 'form' | 'settings'>('list');
+  // --- NAYA: Admin Reviews States ---
+  const [adminReviews, setAdminReviews] = useState<ReviewType[]>([]);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+  const [isUpdatingReview, setIsUpdatingReview] = useState<string | null>(null);
+
+  // MODIFIED: Architecture for Mobile & Desktop Tabs
+  const [adminMobileView, setAdminMobileView] = useState<'content' | 'form' | 'settings'>('content');
+  const [adminContentTab, setAdminContentTab] = useState<'menu' | 'reviews'>('menu');
 
   const ownerWhatsAppNumber = '917878337311'; 
 
   useEffect(() => {
     fetchMenuItems();
-    fetchDeliverySettings(); // Page load hote hi settings fetch karo
+    fetchDeliverySettings();
   }, []);
+
+  // Admin View load hone par Reviews fetch karo
+  useEffect(() => {
+    if (view === 'admin') {
+      fetchAdminReviews();
+    }
+  }, [view]);
 
   const fetchMenuItems = async () => {
     try {
@@ -136,7 +159,63 @@ export default function Home() {
     }
   };
 
-  // NAYA: Dynamic categories list banana (Default + Database existing categories)
+  // --- NAYA: Admin Reviews Functions ---
+  const fetchAdminReviews = async () => {
+    try {
+      setIsLoadingReviews(true);
+      const res = await fetch('/api/reviews?admin=true');
+      if (res.ok) {
+        const data = await res.json();
+        setAdminReviews(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch admin reviews:', error);
+    } finally {
+      setIsLoadingReviews(false);
+    }
+  };
+
+  const handleToggleReviewStatus = async (review: ReviewType) => {
+    setIsUpdatingReview(review._id);
+    try {
+      const res = await fetch(`/api/reviews/${review._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isApproved: !review.isApproved }),
+      });
+      if (res.ok) {
+        setAdminReviews(adminReviews.map(r => r._id === review._id ? { ...r, isApproved: !r.isApproved } : r));
+      } else {
+        alert('Review status update fail ho gaya.');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Network error.');
+    } finally {
+      setIsUpdatingReview(null);
+    }
+  };
+
+  const handleDeleteReview = async (id: string) => {
+    if (window.confirm('Kya aap sach me is review ko delete karna chahte hain?')) {
+      setIsUpdatingReview(id);
+      try {
+        const res = await fetch(`/api/reviews/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          setAdminReviews(adminReviews.filter(r => r._id !== id));
+        } else {
+          alert('Delete fail ho gaya.');
+        }
+      } catch (error) {
+        console.error(error);
+        alert('Network error.');
+      } finally {
+        setIsUpdatingReview(null);
+      }
+    }
+  };
+
+  // Dynamic categories list banana
   const defaultCategories = ['Fast Food', 'Pizza', 'Burger', 'Chinese', 'Beverages'];
   const existingCategories = menuItems.map(item => item.type);
   const allCategories = Array.from(new Set([...defaultCategories, ...existingCategories]));
@@ -208,7 +287,6 @@ export default function Home() {
     setIsSubmittingOrder(true);
 
     setTimeout(() => {
-      // NAYA: Delivery charge ab dynamic DB wali settings se aayega
       const deliveryCharge = deliveryArea === 'local' ? deliverySettings.local : deliverySettings.gaov;
       const areaName = deliveryArea === 'local' ? 'Rani Local' : 'Rani Gaov';
       const itemsTotal = getCartTotal();
@@ -332,8 +410,8 @@ export default function Home() {
           setNewItem({ name: '', description: '', price: '', compareAtPrice: '', type: allCategories[0] || 'Fast Food', image: '' });
           setIsCustomCategory(false);
           alert('Item successfully update ho gaya!');
-          // MODIFIED: Added tab switch to list after successful edit
-          setAdminTab('list');
+          setAdminMobileView('content');
+          setAdminContentTab('menu');
         } else {
           alert('Item update karne me error aayi.');
         }
@@ -350,8 +428,8 @@ export default function Home() {
           setNewItem({ name: '', description: '', price: '', compareAtPrice: '', type: allCategories[0] || 'Fast Food', image: '' }); 
           setIsCustomCategory(false);
           alert('Item successfully add ho gaya!');
-          // MODIFIED: Added tab switch to list after successful add
-          setAdminTab('list');
+          setAdminMobileView('content');
+          setAdminContentTab('menu');
         } else {
           alert('Item add karne me error aayi.');
         }
@@ -380,8 +458,7 @@ export default function Home() {
       type: item.type,
       image: item.image
     });
-    // MODIFIED: Added automatic switch to form tab on mobile when edit is clicked
-    setAdminTab('form');
+    setAdminMobileView('form');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -389,18 +466,14 @@ export default function Home() {
     setEditItemId(null);
     setNewItem({ name: '', description: '', price: '', compareAtPrice: '', type: allCategories[0] || 'Fast Food', image: '' });
     setIsCustomCategory(false);
-    // MODIFIED: Added return to list tab on cancel
-    setAdminTab('list');
+    setAdminMobileView('content');
   };
 
   const handleDeleteItem = async (id: string) => {
     if (window.confirm('Kya aap sach me is item ko delete karna chahte hain?')) {
       setDeletingId(id);
       try {
-        const res = await fetch(`/api/menu/${id}`, {
-          method: 'DELETE',
-        });
-        
+        const res = await fetch(`/api/menu/${id}`, { method: 'DELETE' });
         if (res.ok) {
           setMenuItems(menuItems.filter(item => item._id !== id));
         } else {
@@ -415,7 +488,6 @@ export default function Home() {
     }
   };
 
-  // NAYA: Delivery Settings Save Karne ka Function
   const handleUpdateDeliverySettings = async () => {
     setIsSavingSettings(true);
     try {
@@ -441,17 +513,21 @@ export default function Home() {
     }
   };
 
+  // Helper for dates
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  };
+
 
   // --- ADMIN VIEW RENDER ---
   if (view === 'admin') {
     return (
       <main className="min-h-screen bg-slate-100 font-sans pb-10">
         
-        {/* MODIFIED: Admin Header & Tabs Fixed / Sticky for both Mobile & Desktop */}
+        {/* Admin Header & Tabs Fixed / Sticky */}
         <div className="sticky top-0 z-50 bg-slate-100/90 backdrop-blur-md border-b border-slate-200/50 pb-4 shadow-sm/50">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6">
             <header className="flex flex-row justify-between items-center bg-white p-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-sm gap-2 sm:gap-4 border border-gray-100">
-              {/* MODIFIED: Added logo to admin header */}
               <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                 <img src="/logofun&foods.png" alt="Fun & Foods Logo" className="h-10 sm:h-12 w-auto object-contain" />
                 <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">Fun & Foods <span className="text-orange-600 hidden sm:inline">Admin</span></h1>
@@ -459,41 +535,49 @@ export default function Home() {
               <button onClick={handleLogout} className="bg-gray-900 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-medium hover:bg-gray-800 transition shadow-sm text-sm sm:text-base shrink-0">Logout</button>
             </header>
 
-            {/* MODIFIED: Mobile Tabs Navigation (Now inside sticky header so they stay visible) */}
+            {/* MODIFIED: Mobile Tabs Navigation (Includes Reviews) */}
             <div className="flex lg:hidden mt-4 bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 gap-1 overflow-x-auto hide-scrollbar">
               <button 
-                onClick={() => setAdminTab('list')} 
-                className={`flex-1 min-w-[100px] py-2.5 sm:py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${adminTab === 'list' ? 'bg-orange-100 text-orange-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
+                onClick={() => { setAdminMobileView('content'); setAdminContentTab('menu'); }} 
+                className={`flex-1 min-w-[90px] py-2.5 sm:py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${adminMobileView === 'content' && adminContentTab === 'menu' ? 'bg-orange-100 text-orange-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-                Menu Items
+                Menu
               </button>
               <button 
-                onClick={() => setAdminTab('form')} 
-                className={`flex-1 min-w-[100px] py-2.5 sm:py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${adminTab === 'form' ? 'bg-orange-100 text-orange-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
+                onClick={() => { setAdminMobileView('content'); setAdminContentTab('reviews'); }} 
+                className={`flex-1 min-w-[90px] py-2.5 sm:py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${adminMobileView === 'content' && adminContentTab === 'reviews' ? 'bg-orange-100 text-orange-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
+                Reviews
+              </button>
+              <button 
+                onClick={() => setAdminMobileView('form')} 
+                className={`flex-1 min-w-[90px] py-2.5 sm:py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${adminMobileView === 'form' ? 'bg-orange-100 text-orange-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                {editItemId ? 'Edit Item' : 'Add Item'}
+                {editItemId ? 'Edit' : 'Add'}
               </button>
               <button 
-                onClick={() => setAdminTab('settings')} 
-                className={`flex-1 min-w-[100px] py-2.5 sm:py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${adminTab === 'settings' ? 'bg-orange-100 text-orange-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
+                onClick={() => setAdminMobileView('settings')} 
+                className={`flex-1 min-w-[90px] py-2.5 sm:py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${adminMobileView === 'settings' ? 'bg-orange-100 text-orange-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                Settings
+                Config
               </button>
             </div>
           </div>
         </div>
 
-        {/* MODIFIED: Main Grid Container */}
+        {/* Main Grid Container */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 mt-6 sm:mt-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 relative">
-            {/* MODIFIED: Adjusted lg:top-[140px] so it sticks perfectly below the new fixed header on desktop */}
-            <div className={`bg-transparent lg:bg-white lg:p-6 rounded-2xl lg:shadow-sm lg:col-span-1 h-fit lg:sticky lg:top-[140px] relative z-20 lg:border lg:border-gray-100 flex flex-col gap-6 ${adminTab === 'form' || adminTab === 'settings' ? 'block' : 'hidden lg:flex'}`}>
+            
+            {/* LEFT COLUMN: FORM & SETTINGS */}
+            <div className={`bg-transparent lg:bg-white lg:p-6 rounded-2xl lg:shadow-sm lg:col-span-1 h-fit lg:sticky lg:top-[140px] relative z-20 lg:border lg:border-gray-100 flex flex-col gap-6 ${adminMobileView === 'form' || adminMobileView === 'settings' ? 'block' : 'hidden lg:flex'}`}>
               
               {/* Product Form Section */}
-              <div className={`bg-white p-5 sm:p-0 lg:p-0 rounded-2xl shadow-sm lg:shadow-none border border-gray-100 lg:border-none ${adminTab === 'form' ? 'block' : 'hidden lg:block'}`}>
+              <div className={`bg-white p-5 sm:p-0 lg:p-0 rounded-2xl shadow-sm lg:shadow-none border border-gray-100 lg:border-none ${adminMobileView === 'form' ? 'block' : 'hidden lg:block'}`}>
                 <h2 className="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
                   <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                   {editItemId ? 'Edit Item' : 'Add New Item'}
@@ -616,8 +700,8 @@ export default function Home() {
                 </form>
               </div>
 
-              {/* NAYA: Admin Panel Settings Box */}
-              <div className={`bg-white p-5 sm:p-0 lg:p-0 rounded-2xl shadow-sm lg:shadow-none border border-gray-100 lg:border-none lg:mt-8 lg:pt-8 lg:border-t ${adminTab === 'settings' ? 'block' : 'hidden lg:block'}`}>
+              {/* Delivery Settings Section */}
+              <div className={`bg-white p-5 sm:p-0 lg:p-0 rounded-2xl shadow-sm lg:shadow-none border border-gray-100 lg:border-none lg:mt-8 lg:pt-8 lg:border-t ${adminMobileView === 'settings' ? 'block' : 'hidden lg:block'}`}>
                 <h2 className="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">
                    <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                    Delivery Charges
@@ -657,64 +741,162 @@ export default function Home() {
               
             </div>
 
-            {/* MODIFIED: Added conditional rendering class for mobile list tab */}
-            <div className={`bg-white p-5 sm:p-6 rounded-2xl shadow-sm lg:col-span-2 relative z-10 border border-gray-100 ${adminTab === 'list' ? 'block' : 'hidden lg:block'}`}>
-              <h2 className="text-xl font-bold mb-6 text-gray-800 flex items-center justify-between">
-                <span>Manage Menu Items</span>
-                <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm">{menuItems.length} Total</span>
-              </h2>
-              {isLoading ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-600 mb-4"></div>
-                  <p className="text-gray-500 font-medium">Loading items from database...</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {menuItems.map((item) => (
-                    <div key={item._id} className="border border-gray-100 bg-slate-50 p-4 rounded-2xl flex gap-4 items-start hover:shadow-md transition-shadow">
-                      <div className="w-20 h-20 shrink-0 relative bg-gray-200 rounded-xl border overflow-hidden shadow-sm">
-                        {!loadedImages[`admin-${item._id}`] && (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
-                          </div>
-                        )}
-                        <img 
-                          src={item.image} 
-                          alt={item.name} 
-                          onLoad={() => handleImageLoad(`admin-${item._id}`)}
-                          className={`w-full h-full object-cover transition-opacity duration-300 ${loadedImages[`admin-${item._id}`] ? 'opacity-100' : 'opacity-0'}`} 
-                        />
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-gray-900 truncate text-lg">{item.name}</p>
-                        <span className="inline-block text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded mt-1 font-medium">{item.type}</span>
-                        
-                        <div className="flex items-baseline gap-2 mt-1">
-                          <span className="font-extrabold text-orange-600">₹{item.price}</span>
-                          {item.compareAtPrice && item.compareAtPrice > item.price && (
-                            <span className="text-xs text-gray-400 line-through font-medium">₹{item.compareAtPrice}</span>
-                          )}
-                        </div>
+            {/* RIGHT COLUMN: MENU ITEMS OR REVIEWS */}
+            <div className={`bg-white p-5 sm:p-6 rounded-2xl shadow-sm lg:col-span-2 relative z-10 border border-gray-100 ${adminMobileView === 'content' ? 'block' : 'hidden lg:block'}`}>
+              
+              {/* DESKTOP CONTENT TOGGLE TABS */}
+              <div className="hidden lg:flex gap-3 mb-6 border-b border-gray-100 pb-4">
+                <button 
+                  onClick={() => setAdminContentTab('menu')} 
+                  className={`px-5 py-2.5 font-bold rounded-xl transition-all flex items-center gap-2 ${adminContentTab === 'menu' ? 'bg-gray-900 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+                  Manage Menu <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">{menuItems.length}</span>
+                </button>
+                <button 
+                  onClick={() => setAdminContentTab('reviews')} 
+                  className={`px-5 py-2.5 font-bold rounded-xl transition-all flex items-center gap-2 ${adminContentTab === 'reviews' ? 'bg-orange-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
+                  Customer Reviews <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">{adminReviews.length}</span>
+                </button>
+              </div>
 
-                        <div className="flex gap-2 mt-3">
-                          <button onClick={() => handleEditClick(item)} disabled={deletingId === item._id} className="flex-1 bg-white text-blue-600 hover:bg-blue-50 border border-blue-200 py-1.5 rounded-lg text-sm font-bold transition-colors disabled:opacity-50">
-                            Edit
-                          </button>
-                          <button onClick={() => handleDeleteItem(item._id)} disabled={deletingId === item._id} className="flex-1 bg-white text-red-600 hover:bg-red-50 border border-red-200 py-1.5 rounded-lg text-sm font-bold transition-colors disabled:opacity-50 flex justify-center items-center gap-1">
-                            {deletingId === item._id ? <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div> : 'Delete'}
-                          </button>
-                        </div>
-                      </div>
+              {/* 1. RENDER MENU ITEMS */}
+              {adminContentTab === 'menu' && (
+                <div>
+                  <h2 className="text-xl font-bold mb-6 text-gray-800 flex lg:hidden items-center justify-between">
+                    <span>Manage Menu Items</span>
+                    <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm">{menuItems.length} Total</span>
+                  </h2>
+                  
+                  {isLoading ? (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-600 mb-4"></div>
+                      <p className="text-gray-500 font-medium">Loading items from database...</p>
                     </div>
-                  ))}
-                  {menuItems.length === 0 && (
-                    <div className="col-span-full py-12 text-center text-gray-500 font-medium bg-gray-50 rounded-2xl border border-gray-100">
-                      No items available. Add some!
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {menuItems.map((item) => (
+                        <div key={item._id} className="border border-gray-100 bg-slate-50 p-4 rounded-2xl flex gap-4 items-start hover:shadow-md transition-shadow">
+                          <div className="w-20 h-20 shrink-0 relative bg-gray-200 rounded-xl border overflow-hidden shadow-sm">
+                            {!loadedImages[`admin-${item._id}`] && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+                              </div>
+                            )}
+                            <img 
+                              src={item.image} 
+                              alt={item.name} 
+                              onLoad={() => handleImageLoad(`admin-${item._id}`)}
+                              className={`w-full h-full object-cover transition-opacity duration-300 ${loadedImages[`admin-${item._id}`] ? 'opacity-100' : 'opacity-0'}`} 
+                            />
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-gray-900 truncate text-lg">{item.name}</p>
+                            <span className="inline-block text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded mt-1 font-medium">{item.type}</span>
+                            
+                            <div className="flex items-baseline gap-2 mt-1">
+                              <span className="font-extrabold text-orange-600">₹{item.price}</span>
+                              {item.compareAtPrice && item.compareAtPrice > item.price && (
+                                <span className="text-xs text-gray-400 line-through font-medium">₹{item.compareAtPrice}</span>
+                              )}
+                            </div>
+
+                            <div className="flex gap-2 mt-3">
+                              <button onClick={() => handleEditClick(item)} disabled={deletingId === item._id} className="flex-1 bg-white text-blue-600 hover:bg-blue-50 border border-blue-200 py-1.5 rounded-lg text-sm font-bold transition-colors disabled:opacity-50">
+                                Edit
+                              </button>
+                              <button onClick={() => handleDeleteItem(item._id)} disabled={deletingId === item._id} className="flex-1 bg-white text-red-600 hover:bg-red-50 border border-red-200 py-1.5 rounded-lg text-sm font-bold transition-colors disabled:opacity-50 flex justify-center items-center gap-1">
+                                {deletingId === item._id ? <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div> : 'Delete'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {menuItems.length === 0 && (
+                        <div className="col-span-full py-12 text-center text-gray-500 font-medium bg-gray-50 rounded-2xl border border-gray-100">
+                          No items available. Add some!
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
               )}
+
+              {/* 2. RENDER REVIEWS PANEL */}
+              {adminContentTab === 'reviews' && (
+                <div>
+                  <h2 className="text-xl font-bold mb-6 text-gray-800 flex lg:hidden items-center justify-between">
+                    <span>Manage Reviews</span>
+                    <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm">{adminReviews.length} Total</span>
+                  </h2>
+
+                  {isLoadingReviews ? (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-600 mb-4"></div>
+                      <p className="text-gray-500 font-medium">Loading reviews...</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      {adminReviews.map((review) => (
+                        <div key={review._id} className={`border p-4 sm:p-5 rounded-2xl flex flex-col gap-3 transition-shadow ${review.isApproved ? 'border-green-100 bg-green-50/30' : 'border-orange-100 bg-orange-50'}`}>
+                          
+                          <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-3">
+                               <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(review.name)}&background=random`} alt={review.name} className="w-10 h-10 rounded-full border-2 border-white shadow-sm" />
+                               <div>
+                                 <h4 className="font-bold text-gray-900 capitalize">{review.name}</h4>
+                                 <div className="flex text-yellow-400 text-xs mt-0.5">
+                                   {Array.from({ length: 5 }).map((_, i) => (
+                                     <span key={i} className={i < review.rating ? 'opacity-100' : 'opacity-30'}>⭐</span>
+                                   ))}
+                                 </div>
+                               </div>
+                            </div>
+                            <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full ${review.isApproved ? 'bg-green-100 text-green-700' : 'bg-orange-200 text-orange-800'}`}>
+                              {review.isApproved ? 'LIVE ✓' : 'HIDDEN 👁️'}
+                            </span>
+                          </div>
+
+                          <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm text-sm text-gray-700 italic">
+                            "{review.comment}"
+                          </div>
+
+                          <div className="flex justify-between items-center mt-1">
+                             <span className="text-xs text-gray-500 font-medium">{formatDate(review.createdAt)}</span>
+                             
+                             <div className="flex gap-2">
+                               <button 
+                                 onClick={() => handleToggleReviewStatus(review)} 
+                                 disabled={isUpdatingReview === review._id}
+                                 className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all shadow-sm disabled:opacity-50 flex items-center gap-1.5 ${review.isApproved ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                               >
+                                 {isUpdatingReview === review._id ? <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div> : (review.isApproved ? 'Hide Review' : 'Approve')}
+                               </button>
+                               <button 
+                                 onClick={() => handleDeleteReview(review._id)}
+                                 disabled={isUpdatingReview === review._id}
+                                 className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-sm font-bold transition-all disabled:opacity-50"
+                               >
+                                 Delete
+                               </button>
+                             </div>
+                          </div>
+
+                        </div>
+                      ))}
+                      {adminReviews.length === 0 && (
+                        <div className="py-12 text-center text-gray-500 font-medium bg-gray-50 rounded-2xl border border-gray-100">
+                          Abhi tak koi review nahi aaya.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
             </div>
           </div>
         </div>
@@ -745,7 +927,6 @@ export default function Home() {
       <main className="min-h-screen bg-slate-50 font-sans selection:bg-orange-200 flex flex-col overflow-x-hidden">
         <nav className="fixed top-0 left-0 w-full z-[90] bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
           <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-            {/* MODIFIED: Added logo to store navbar */}
             <div className="flex items-center gap-3">
               <img src="/logofun&foods.png" alt="Fun & Foods Logo" className="h-12 w-auto object-contain" />
               <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">
@@ -929,7 +1110,6 @@ export default function Home() {
         <footer className="bg-slate-900 text-gray-300 py-16 mt-auto">
           <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
             <div className="space-y-4">
-              {/* MODIFIED: Added logo to footer */}
               <div className="flex items-center gap-3">
                 <img src="/logofun&foods.png" alt="Fun & Foods Logo" className="h-16 w-auto object-contain bg-white/90 p-1 rounded-xl" />
                 <h1 className="text-3xl font-extrabold text-white tracking-tight">
@@ -960,7 +1140,6 @@ export default function Home() {
               <ul className="space-y-3 text-sm font-medium">
                 <li className="flex justify-between border-b border-gray-800 pb-2">
                   <span>Rani Local Area</span>
-                  {/* NAYA: Footer me bhi dynamic rate */}
                   <span className="text-orange-500 font-bold">₹{deliverySettings.local}</span>
                 </li>
                 <li className="flex justify-between border-b border-gray-800 pb-2">
@@ -1047,13 +1226,11 @@ export default function Home() {
         )}
 
         {/* MAKHAN SMOOTH CART SIDEBAR / BOTTOM SHEET */}
-        {/* Backdrop Element */}
         <div 
           className={`fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm transition-opacity duration-500 ease-in-out ${isCartOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} 
           onClick={() => setIsCartOpen(false)}
         ></div>
 
-        {/* Cart Container */}
         <div 
           className={`fixed z-[101] bg-white flex flex-col shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]
             bottom-0 left-0 md:left-auto md:right-0 md:top-0 md:bottom-auto
@@ -1143,7 +1320,6 @@ export default function Home() {
                 <div className="space-y-3">
                   <label className="block text-sm font-extrabold text-gray-700">Select Delivery Area</label>
                   <div className="grid grid-cols-2 gap-4">
-                    {/* NAYA: Dynamic Delivery Options in Checkout */}
                     <label className={`cursor-pointer flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${deliveryArea === 'local' ? 'border-orange-500 bg-orange-50 shadow-md transform scale-[1.02]' : 'border-gray-200 hover:border-orange-200 bg-white'}`}>
                       <input type="radio" name="area" value="local" checked={deliveryArea === 'local'} onChange={() => setDeliveryArea('local')} className="sr-only" />
                       <span className="font-extrabold text-gray-900">Rani Local</span>
@@ -1172,7 +1348,6 @@ export default function Home() {
                 <div className="pt-4 border-t border-gray-100">
                   <div className="flex justify-between items-center mb-5 bg-slate-50 p-4 rounded-xl border border-slate-100">
                     <span className="text-gray-500 font-extrabold">Grand Total</span>
-                    {/* NAYA: Dynamic Grand Total */}
                     <span className="text-3xl font-black text-gray-900">₹{getCartTotal() + (deliveryArea === 'local' ? deliverySettings.local : deliverySettings.gaov)}</span>
                   </div>
                   <button
